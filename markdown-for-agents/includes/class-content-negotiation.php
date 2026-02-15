@@ -84,6 +84,7 @@ class MDFA_Content_Negotiation {
 	}
 
 	private static function send_markdown_response( string $markdown, int $tokens ): void {
+		status_header( 200 );
 		header( 'Content-Type: text/markdown; charset=utf-8' );
 		header( 'Vary: Accept' );
 		header( 'X-Markdown-Tokens: ' . $tokens );
@@ -98,6 +99,10 @@ class MDFA_Content_Negotiation {
 
 	private static function is_markdown_requested(): bool {
 		if ( get_query_var( 'format' ) === 'md' ) {
+			return true;
+		}
+
+		if ( isset( $_GET['format'] ) && $_GET['format'] === 'md' ) {
 			return true;
 		}
 

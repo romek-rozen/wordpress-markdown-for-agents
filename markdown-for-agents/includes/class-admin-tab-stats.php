@@ -43,7 +43,7 @@ class MDFA_Admin_Tab_Stats {
 			.mdfa-bar { display: flex; align-items: center; margin-bottom: 8px; }
 			.mdfa-bar-label { width: 180px; font-size: 13px; }
 			.mdfa-bar-track { flex: 1; height: 24px; background: #f0f0f1; border-radius: 3px; overflow: hidden; margin: 0 10px; }
-			.mdfa-bar-fill { height: 100%; background: #2271b1; border-radius: 3px; min-width: 2px; }
+			.mdfa-bar-fill { display: block; height: 100%; background: #2271b1; border-radius: 3px; min-width: 2px; }
 			.mdfa-bar-value { width: 50px; text-align: right; font-weight: 600; font-size: 13px; }
 			.mdfa-savings { color: #00a32a; font-weight: 700; }
 		</style>

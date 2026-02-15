@@ -49,7 +49,7 @@ Four-layer content discovery system:
 1. **Vary header** (`send_headers`) — `Vary: Accept` on HTML responses for enabled post types (enables HEAD-based discovery)
 2. **Discovery tag** (`wp_head`) — `<link rel="alternate" type="text/markdown">` on singular views and taxonomy archives
 3. **Static endpoint** (`template_redirect`) — `?format=md` URL parameter (posts and taxonomy archives)
-4. **Content negotiation** (`template_redirect`, priority 5) — transparent `Accept: text/markdown` handling (posts and taxonomy archives)
+4. **Content negotiation** (`template_redirect`, priority 5) — transparent `Accept: text/markdown` handling (posts and taxonomy archives). Uses `$_GET['format']` fallback for front page where `get_query_var()` doesn't work
 
 **Conversion pipeline (single posts):** `post_content` → `apply_filters('the_content')` (render Gutenberg blocks) → `league/html-to-markdown` → prepend YAML frontmatter → serve with proper headers.
 
