@@ -45,6 +45,12 @@ class MDFA_Admin_Tab_Settings {
 			'default'           => true,
 		] );
 
+		register_setting( 'mdfa_settings', 'mdfa_beta_updates', [
+			'type'              => 'boolean',
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'default'           => false,
+		] );
+
 		register_setting( 'mdfa_settings', 'mdfa_ai_bots', [
 			'type'              => 'array',
 			'sanitize_callback' => [ __CLASS__, 'sanitize_bot_list' ],
@@ -122,6 +128,14 @@ class MDFA_Admin_Tab_Settings {
 			'mdfa_anonymize_ip',
 			__( 'Anonimizacja IP (GDPR)', 'markdown-for-agents' ),
 			[ __CLASS__, 'render_anonymize_ip_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_field(
+			'mdfa_beta_updates',
+			__( 'Aktualizacje beta', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_beta_updates_field' ],
 			'markdown-for-agents',
 			'mdfa_general'
 		);
@@ -249,6 +263,15 @@ class MDFA_Admin_Tab_Settings {
 			checked( $anonymize, true, false )
 		);
 		echo '<p class="description">' . esc_html__( 'Obcinaj ostatni oktet IPv4 / ostatnie 80 bitów IPv6 przed zapisem do logów. Zalecane ze względu na GDPR.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_beta_updates_field(): void {
+		$beta = get_option( 'mdfa_beta_updates', false );
+		printf(
+			'<input type="checkbox" name="mdfa_beta_updates" value="1" %s />',
+			checked( $beta, true, false )
+		);
+		echo '<p class="description">' . esc_html__( 'Włącz, aby otrzymywać aktualizacje pre-release (beta, RC). Niezalecane na produkcji.', 'markdown-for-agents' ) . '</p>';
 	}
 
 	public static function render_ai_bots_field(): void {

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WordPress plugin implementing the **Markdown for Agents** specification (Cloudflare, Feb 2026). Serves AI agents (GPTBot, ClaudeBot, Gemini etc.) with Markdown instead of HTML, reducing token usage ~80%.
 
-- **Working version:** 1.0.3 (in development)
+- **Working version:** 1.0.4 (in development)
 - **Language:** PHP 8.0+
 - **Platform:** WordPress 6.0+ (requires Gutenberg block content)
 - **Spec references:** [Cloudflare blog](https://blog.cloudflare.com/markdown-for-agents/), [Cloudflare docs](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/), [Content Signals](https://contentsignals.org/)
@@ -62,7 +62,7 @@ Four-layer content discovery system:
 
 **Caching:** WordPress Transients API, key `mdfa_md_{post_id}_{modified_hash}`, invalidated on `save_post` via post meta `_mdfa_cache_key`.
 
-**Auto-update:** `MDFA_Updater` checks Forgejo releases API (`repo.nimblio.work`) every 12h via WordPress Transients. Uses `site_transient_update_plugins` + `plugins_api` filters. `upgrader_source_selection` fixes folder structure from Forgejo archive ZIP.
+**Auto-update:** `MDFA_Updater` checks GitHub releases API every 1h via WordPress Transients. Uses `site_transient_update_plugins` + `plugins_api` filters. `upgrader_source_selection` fixes folder structure from archive ZIP. Supports opt-in beta/pre-release updates (`mdfa_beta_updates` option) — when enabled, queries `/releases` (all) instead of `/releases/latest` (stable only), with separate cache key.
 
 **Request logging:** Custom table `wp_mdfa_request_log` — logs every markdown request with post_id, term_id, taxonomy, request_method (accept_header/format_param), user_agent, bot_name, bot_type, ip_address, tokens, timestamp. Bot identification happens at insert time (not at query time). DB schema versioned via `mdfa_db_version` option (current: 3) with automatic migration on `plugins_loaded`.
 
@@ -166,5 +166,6 @@ After every feature/fix, update `CHANGELOG.md` under the current working version
 - **Sprint 2.7** — DONE: Auto-update from Forgejo repository (releases API, folder fix for archive ZIP)
 - **Sprint 3** — DONE: Taxonomy archive support (categories, tags, WooCommerce product_cat/product_tag, custom taxonomies). Archive frontmatter + post list + subcategories + pagination. DB migration for term_id/taxonomy in request log. Settings UI for enabled taxonomies.
 - **Sprint 3.1** — DONE: HTTP `Link: rel="canonical"` header (RFC 5988) pointing to original HTML page, configurable in settings (default: on)
+- **Sprint 3.2** — DONE: Pre-release opt-in (beta updates checkbox, separate cache, visual "(beta)" label, update check TTL 12h→1h)
 - **Sprint 4** — TODO: rewrite rules (`/slug/index.md`), page builder compatibility
 

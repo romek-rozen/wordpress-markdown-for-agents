@@ -106,6 +106,7 @@ Configure which post types and taxonomies are enabled in **Settings → Markdown
 | Taxonomies | Categories, Tags | Which taxonomy archives serve Markdown |
 | Cache TTL | 3600s | How long converted Markdown is cached |
 | Canonical Link header | On | Send `Link: rel="canonical"` pointing to HTML page |
+| Beta updates | Off | Opt-in to receive pre-release (beta/RC) updates |
 
 ## WooCommerce
 

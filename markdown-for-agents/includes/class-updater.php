@@ -9,8 +9,9 @@ class MDFA_Updater {
 
 	private const REPO_URL  = 'https://github.com/romek-rozen/wordpress-markdown-for-agents';
 	private const API_URL   = 'https://api.github.com/repos/romek-rozen/wordpress-markdown-for-agents';
-	private const CACHE_KEY = 'mdfa_update_check';
-	private const CACHE_TTL = 43200; // 12 hours
+	private const CACHE_KEY      = 'mdfa_update_check';
+	private const CACHE_KEY_BETA = 'mdfa_update_check_beta';
+	private const CACHE_TTL      = 3600; // 1 hour
 
 	private static string $plugin_file;
 	private static string $plugin_basename;
@@ -29,12 +30,19 @@ class MDFA_Updater {
 	 * Fetch latest release info from GitHub API (cached).
 	 */
 	private static function get_remote_release(): ?object {
-		$cached = get_transient( self::CACHE_KEY );
+		$beta      = (bool) get_option( 'mdfa_beta_updates', false );
+		$cache_key = $beta ? self::CACHE_KEY_BETA : self::CACHE_KEY;
+
+		$cached = get_transient( $cache_key );
 		if ( false !== $cached ) {
 			return $cached ?: null;
 		}
 
-		$response = wp_remote_get( self::API_URL . '/releases/latest', [
+		$endpoint = $beta
+			? self::API_URL . '/releases'
+			: self::API_URL . '/releases/latest';
+
+		$response = wp_remote_get( $endpoint, [
 			'timeout' => 10,
 			'headers' => [
 				'Accept'     => 'application/vnd.github+json',
@@ -43,17 +51,21 @@ class MDFA_Updater {
 		] );
 
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			set_transient( self::CACHE_KEY, '', self::CACHE_TTL );
+			set_transient( $cache_key, '', self::CACHE_TTL );
 			return null;
 		}
 
-		$release = json_decode( wp_remote_retrieve_body( $response ) );
+		$body = json_decode( wp_remote_retrieve_body( $response ) );
+
+		// /releases returns an array — take the first (newest) element.
+		$release = $beta && is_array( $body ) ? ( $body[0] ?? null ) : $body;
+
 		if ( ! $release || empty( $release->tag_name ) ) {
-			set_transient( self::CACHE_KEY, '', self::CACHE_TTL );
+			set_transient( $cache_key, '', self::CACHE_TTL );
 			return null;
 		}
 
-		set_transient( self::CACHE_KEY, $release, self::CACHE_TTL );
+		set_transient( $cache_key, $release, self::CACHE_TTL );
 		return $release;
 	}
 
@@ -96,10 +108,12 @@ class MDFA_Updater {
 		$remote_version = self::parse_version( $release->tag_name );
 
 		if ( version_compare( MDFA_VERSION, $remote_version, '<' ) ) {
+			$is_prerelease = ! empty( $release->prerelease );
+
 			$item              = new stdClass();
 			$item->slug        = 'markdown-for-agents';
 			$item->plugin      = self::$plugin_basename;
-			$item->new_version = $remote_version;
+			$item->new_version = $is_prerelease ? $remote_version . ' (beta)' : $remote_version;
 			$item->url         = self::REPO_URL;
 			$item->package     = self::get_download_url( $release );
 			$item->icons       = [];
@@ -142,8 +156,13 @@ class MDFA_Updater {
 		$info->requires      = '6.0';
 		$info->requires_php  = '8.0';
 		$info->tested        = '';
+		$description = 'Serves AI agents with Markdown instead of HTML, reducing token usage ~80%. Implements Cloudflare\'s Markdown for Agents specification.';
+		if ( ! empty( $release->prerelease ) ) {
+			$description = '<p><strong>⚠ To jest wersja pre-release (beta/RC). Nie zalecana na produkcji.</strong></p>' . $description;
+		}
+
 		$info->sections      = [
-			'description' => 'Serves AI agents with Markdown instead of HTML, reducing token usage ~80%. Implements Cloudflare\'s Markdown for Agents specification.',
+			'description' => $description,
 			'changelog'   => nl2br( esc_html( $release->body ?? '' ) ),
 		];
 		$info->banners       = [];
@@ -200,6 +219,7 @@ class MDFA_Updater {
 			&& in_array( self::$plugin_basename, $options['plugins'], true )
 		) {
 			delete_transient( self::CACHE_KEY );
+			delete_transient( self::CACHE_KEY_BETA );
 		}
 	}
 }

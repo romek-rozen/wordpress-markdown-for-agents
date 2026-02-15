@@ -2,6 +2,17 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.4] — 2026-02-15
+
+### Dodane
+- Opt-in na aktualizacje beta/pre-release (checkbox w ustawieniach, domyślnie wyłączony)
+- Oznaczenie "(beta)" przy wersji pre-release w panelu aktualizacji WP
+- Ostrzeżenie o pre-release w oknie szczegółów wtyczki
+
+### Zmienione
+- Cache sprawdzania aktualizacji skrócony z 12h do 1h
+- Osobny klucz cache dla trybu beta (przełączenie opcji działa natychmiast)
+
 ## [1.0.3] — 2026-02-15
 
 ### Zmienione

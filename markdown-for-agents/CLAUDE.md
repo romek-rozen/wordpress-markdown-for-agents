@@ -33,6 +33,7 @@
 | `mdfa_taxonomies` | `['category', 'post_tag']` | Enabled taxonomies for archive Markdown |
 | `mdfa_db_version` | `2` | DB schema version for migrations |
 | `mdfa_stats` | `[]` | HTML request counters (html_requests, html_tokens_estimated, html_archive_requests, started_at) |
+| `mdfa_beta_updates` | `false` | Opt-in for pre-release (beta/RC) updates |
 
 ## Custom DB Table
 

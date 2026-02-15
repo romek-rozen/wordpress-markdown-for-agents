@@ -11,6 +11,9 @@ delete_option( 'mdfa_taxonomies' );
 delete_option( 'mdfa_cache_ttl' );
 delete_option( 'mdfa_db_version' );
 delete_option( 'mdfa_stats' );
+delete_option( 'mdfa_beta_updates' );
+delete_transient( 'mdfa_update_check' );
+delete_transient( 'mdfa_update_check_beta' );
 
 // Usuń tabelę logów
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mdfa_request_log" );
