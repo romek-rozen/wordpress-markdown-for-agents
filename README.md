@@ -1,63 +1,92 @@
 # Markdown for Agents
 
-WordPress plugin implementing the [Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) specification (Cloudflare, Feb 2026). Serves AI agents with Markdown instead of HTML, reducing token usage ~80%.
+![WordPress 6.0+](https://img.shields.io/badge/WordPress-6.0%2B-21759b?logo=wordpress)
+![PHP 8.0+](https://img.shields.io/badge/PHP-8.0%2B-777bb4?logo=php&logoColor=white)
+![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue)
+![Latest Release](https://img.shields.io/github/v/release/romek-rozen/wordpress-markdown-for-agents)
+
+**Serve AI agents with Markdown instead of HTML, reducing token usage ~80%.**
+Implements the [Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) specification by Cloudflare with [Content Signals](https://contentsignals.org/) headers.
+
+---
+
+## Example output
+
+```yaml
+---
+title: "How to Train Your Dragon"
+author: "Jane Smith"
+date: "2026-01-15"
+categories:
+  - Tutorials
+tags:
+  - AI
+  - WordPress
+url: "https://example.com/how-to-train-your-dragon/"
+---
+
+This is the **full post content** converted from Gutenberg blocks
+to clean Markdown. Lists, headings, images, code blocks — all preserved.
+
+- Bullet points work
+- [Links work](https://example.com)
+- `inline code` works
+```
+
+```
+HTTP/1.1 200 OK
+Content-Type: text/markdown; charset=utf-8
+Vary: Accept
+X-Markdown-Tokens: 342
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
+X-Robots-Tag: noindex
+Link: <https://example.com/post/>; rel="canonical"
+```
 
 ## Features
+
+### Core
 
 - **Content negotiation** — responds with Markdown when `Accept: text/markdown` header is present
 - **Static endpoint** — `?format=md` URL parameter for any post/page
 - **Discovery tag** — `<link rel="alternate" type="text/markdown">` in `<head>`
-- **Taxonomy archives** — category, tag and custom taxonomy pages served as Markdown (post list with frontmatter, pagination, subcategories)
 - **YAML frontmatter** — title, author, date, categories, tags, URL
-- **WooCommerce support** — products get `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` in frontmatter; product category archives include price/SKU per item
 - **HTTP headers** — `Content-Type`, `Vary`, `X-Markdown-Tokens`, `Content-Signal` per spec
 - **Token estimation** — approximate token count in response header
+- **Caching** — Transients-based, invalidated on post save
+
+### Admin
+
 - **Request logging** — tracks all markdown requests with bot identification, filtering, sorting, pagination
 - **Bot identification** — recognizes 24+ AI bots (GPTBot, ClaudeBot, Googlebot, PerplexityBot, etc.)
 - **Statistics dashboard** — HTML vs Markdown comparison, bot distribution chart, top posts, token stats
-- **Admin settings** — tabbed interface: settings, request logs, statistics
-- **Auto-update** — automatic updates (no ZIP uploading needed)
+- **Settings UI** — tabbed interface: settings, request logs, statistics
+- **Auto-update** — automatic updates from releases (no ZIP uploading needed)
 - **Clean uninstall** — removes all data (table, options, cache) when plugin is deleted
 
-## Requirements
+### Integrations
 
-- WordPress 6.0+
-- PHP 8.0+
+- **Taxonomy archives** — category, tag and custom taxonomy pages served as Markdown (post list with frontmatter, pagination, subcategories)
+- **WooCommerce** — products get `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` in frontmatter; product category archives include price/SKU per item
 
-## Installation
+## Quick start
 
-1. Download `markdown-for-agents.zip`
-2. WordPress admin → Plugins → Add New → Upload Plugin
-3. Activate
+**Install:**
 
-Or manually: copy `markdown-for-agents/` to `wp-content/plugins/` and run `composer install --no-dev` inside it.
+1. Download `markdown-for-agents.zip` from the [latest release](https://github.com/romek-rozen/wordpress-markdown-for-agents/releases/latest)
+2. WordPress admin → Plugins → Add New → Upload Plugin → Activate
 
-## Usage
-
-Once activated, any post or page is available as Markdown:
+**Test:**
 
 ```bash
 # Via URL parameter
-curl 'https://example.com/my-post/?format=md'
+curl 'https://your-site.com/hello-world/?format=md'
 
-# Via Accept header
-curl -H 'Accept: text/markdown' 'https://example.com/my-post/'
+# Via Accept header (how AI agents do it)
+curl -H 'Accept: text/markdown' 'https://your-site.com/hello-world/'
 ```
 
-Configure which post types are enabled in **Settings → Markdown for Agents**.
-
-### WooCommerce
-
-Enable the `product` post type in settings. Product frontmatter includes add-to-cart URL, price, currency, SKU and stock status. Taxonomy terms (`product_cat`, `product_tag`) are automatically mapped to `categories` and `tags`.
-
-## Settings
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| Enable plugin | On | Master switch |
-| Post types | Posts, Pages | Which post types serve Markdown |
-| Taxonomies | Categories, Tags | Which taxonomy archives serve Markdown |
-| Cache TTL | 3600s | How long converted Markdown is cached |
+Configure which post types and taxonomies are enabled in **Settings → Markdown for Agents**.
 
 ## How it works
 
@@ -68,22 +97,39 @@ Enable the `product` post type in settings. Product frontmatter includes add-to-
 5. YAML frontmatter with post metadata is prepended
 6. Response is served with proper headers and cached via WordPress Transients
 
-## Releasing a new version
+## Configuration
 
-1. Update `MDFA_VERSION` in `markdown-for-agents/markdown-for-agents.php`
-2. Update `Version:` in the plugin header to match
-3. Commit and push to master
-4. Create a release with tag `v{version}` (e.g. `v1.1.0`) and attach the plugin ZIP
-5. WordPress installations will detect the update within 12 hours (or on next plugin check)
+| Option | Default | Description |
+|--------|---------|-------------|
+| Enable plugin | On | Master switch |
+| Post types | Posts, Pages | Which post types serve Markdown |
+| Taxonomies | Categories, Tags | Which taxonomy archives serve Markdown |
+| Cache TTL | 3600s | How long converted Markdown is cached |
+| Canonical Link header | On | Send `Link: rel="canonical"` pointing to HTML page |
+
+## WooCommerce
+
+Enable the `product` post type in settings. Product frontmatter includes add-to-cart URL, price, currency, SKU and stock status. Taxonomy terms (`product_cat`, `product_tag`) are automatically mapped to `categories` and `tags`.
+
+## Development
+
+```bash
+docker compose up -d
+# WordPress at http://localhost:8080 (admin/admin)
+```
+
+See `docker-compose.yml` for the full dev environment setup.
 
 ## Planned features
 
 - Pretty URLs via rewrite rules (`/slug/index.md`)
 - Page builder compatibility
 
-## Specification
+## Links
 
-Implements the [Cloudflare Markdown for Agents](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/) spec with [Content Signals](https://contentsignals.org/) headers.
+- [Cloudflare: Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) — announcement blog post
+- [Cloudflare: Spec reference](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/) — technical specification
+- [Content Signals](https://contentsignals.org/) — HTTP header standard for AI content permissions
 
 ## License
 

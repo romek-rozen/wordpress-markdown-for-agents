@@ -7,7 +7,7 @@
  * Requires PHP: 8.0
  * Author: Romek
  * Author URI: https://rozenberger.com/
- * Plugin URI: https://rozenberger.com/markdown-for-agents
+ * Plugin URI: https://github.com/romek-rozen/wordpress-markdown-for-agents
  * License: GPL v2 or later
  * Text Domain: markdown-for-agents
  * Update URI: https://repo.nimblio.work/roman/wordpress-markdown-for-agents

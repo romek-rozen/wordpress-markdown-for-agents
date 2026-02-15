@@ -4,6 +4,10 @@ Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
 ## [1.0.3] — 2026-02-15
 
+### Zmienione
+- README.md: badge'e, example output, pogrupowane features, skondensowany quick start, sekcja links
+- Plugin URI zmieniony na repozytorium GitHub
+
 ### Dodane
 - Nagłówek HTTP `Link: <url>; rel="canonical"` w odpowiedziach Markdown wskazujący na oryginalną stronę HTML (RFC 5988)
 - Ustawienie włączenia/wyłączenia nagłówka canonical (domyślnie włączony)
