@@ -26,6 +26,9 @@ require_once MDFA_PLUGIN_DIR . 'includes/class-discovery.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-request-log.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-request-log-table.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-stats-tracker.php';
+require_once MDFA_PLUGIN_DIR . 'includes/class-admin-tab-settings.php';
+require_once MDFA_PLUGIN_DIR . 'includes/class-admin-tab-logs.php';
+require_once MDFA_PLUGIN_DIR . 'includes/class-admin-tab-stats.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-admin.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-updater.php';
 
