@@ -49,6 +49,8 @@ Four-layer content discovery system:
 
 **Conversion pipeline:** `post_content` → `apply_filters('the_content')` (render Gutenberg blocks) → `league/html-to-markdown` → prepend YAML frontmatter → serve with proper headers.
 
+**WooCommerce support:** Converter uses universal taxonomy retrieval (`get_object_taxonomies()`) for any post type. For `product` post type, frontmatter includes `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` via WooCommerce API (guarded by `function_exists('wc_get_product')`).
+
 **HTTP headers:** `Content-Type: text/markdown; charset=utf-8`, `Vary: Accept`, `X-Markdown-Tokens: <count>`, `Content-Signal: ai-train=yes, search=yes, ai-input=yes`, `X-Robots-Tag: noindex`.
 
 **Caching:** WordPress Transients API, key `mdfa_md_{post_id}_{modified_hash}`, invalidated on `save_post` via post meta `_mdfa_cache_key`.
@@ -59,7 +61,7 @@ Four-layer content discovery system:
 
 | Class | File | Responsibility |
 |-------|------|---------------|
-| MDFA_Converter | `includes/class-converter.php` | HTML→Markdown + frontmatter + cache |
+| MDFA_Converter | `includes/class-converter.php` | HTML→Markdown + frontmatter + cache + WooCommerce product data |
 | MDFA_Content_Negotiation | `includes/class-content-negotiation.php` | Accept header + ?format=md routing |
 | MDFA_Discovery | `includes/class-discovery.php` | `<link rel="alternate">` tag |
 | MDFA_Token_Estimator | `includes/class-token-estimator.php` | Token count: `ceil(mb_strlen / 4)` |
@@ -112,4 +114,5 @@ docker compose exec db mysql -uroot -proot wordpress -e "SELECT * FROM wp_mdfa_r
 - **Sprint 1 (MVP)** — DONE: converter, content negotiation, discovery tag, HTTP headers, token estimator, request logging, Docker dev env
 - **Sprint 2** — DONE: wp-admin settings page (post types, cache TTL, enable/disable), log viewer, uninstall cleanup, prefix rename MFA→MDFA with auto-migration, i18n
 - **Sprint 2.5** — DONE: tabbed admin (settings/logs/stats), WP_List_Table with bot identification + filtering + pagination, HTML vs Markdown stats comparison, bot distribution chart, top posts, token stats, X-Robots-Tag: noindex
+- **Sprint 2.6** — DONE: WooCommerce compatibility (universal taxonomy retrieval, product frontmatter with add_to_cart_url/price/currency/sku/in_stock)
 - **Sprint 3** — TODO: taxonomy archive support (categories, tags, custom taxonomies — see `taxonomy_plan.md`), rewrite rules (`/slug/index.md`), page builder compatibility

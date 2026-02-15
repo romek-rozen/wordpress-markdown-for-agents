@@ -8,6 +8,7 @@ WordPress plugin implementing the [Markdown for Agents](https://blog.cloudflare.
 - **Static endpoint** — `?format=md` URL parameter for any post/page
 - **Discovery tag** — `<link rel="alternate" type="text/markdown">` in `<head>`
 - **YAML frontmatter** — title, author, date, categories, tags, URL
+- **WooCommerce support** — products get `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` in frontmatter
 - **HTTP headers** — `Content-Type`, `Vary`, `X-Markdown-Tokens`, `Content-Signal` per spec
 - **Token estimation** — approximate token count in response header
 - **Request logging** — tracks all markdown requests with bot identification, filtering, sorting, pagination
@@ -42,6 +43,10 @@ curl -H 'Accept: text/markdown' 'https://example.com/my-post/'
 ```
 
 Configure which post types are enabled in **Settings → Markdown for Agents**.
+
+### WooCommerce
+
+Enable the `product` post type in settings. Product frontmatter includes add-to-cart URL, price, currency, SKU and stock status. Taxonomy terms (`product_cat`, `product_tag`) are automatically mapped to `categories` and `tags`.
 
 ## Settings
 

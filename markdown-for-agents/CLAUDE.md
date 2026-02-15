@@ -7,6 +7,7 @@
 - WordPress Coding Standards: tabs, spaces around parentheses in control structures
 - Never direct DB queries — use WordPress API (`get_post()`, `get_transient()`, `get_option()`, etc.)
 - Exception: `MDFA_Request_Log` uses `$wpdb->insert()` for custom table — this is the WordPress way for custom tables
+- WooCommerce integration guarded by `function_exists()` checks — plugin works with or without WooCommerce
 
 ## WordPress Hooks
 

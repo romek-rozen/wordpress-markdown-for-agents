@@ -84,6 +84,19 @@ class MDFA_Converter {
 		$lines[] = 'author: "' . self::escape_yaml( $author->display_name ?? '' ) . '"';
 		$lines[] = 'url: "' . get_permalink( $post ) . '"';
 
+		if ( $post->post_type === 'product' && function_exists( 'wc_get_product' ) ) {
+			$product = wc_get_product( $post->ID );
+			if ( $product ) {
+				$lines[] = 'add_to_cart_url: "' . self::escape_yaml( $product->add_to_cart_url() ) . '"';
+				$lines[] = 'price: "' . self::escape_yaml( $product->get_price() ) . '"';
+				$lines[] = 'currency: "' . self::escape_yaml( get_woocommerce_currency() ) . '"';
+				if ( $product->get_sku() ) {
+					$lines[] = 'sku: "' . self::escape_yaml( $product->get_sku() ) . '"';
+				}
+				$lines[] = 'in_stock: ' . ( $product->is_in_stock() ? 'true' : 'false' );
+			}
+		}
+
 		if ( ! empty( $category_names ) ) {
 			$lines[] = 'categories:';
 			foreach ( $category_names as $cat ) {
