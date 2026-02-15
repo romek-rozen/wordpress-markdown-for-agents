@@ -3,3 +3,4 @@ markdown-for-agents/composer.lock
 *.zip
 poc.md
 .DS_Store
+.env
