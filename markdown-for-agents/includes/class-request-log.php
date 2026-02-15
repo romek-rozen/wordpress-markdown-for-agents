@@ -162,10 +162,21 @@ class MDFA_Request_Log {
 			? $wpdb->get_results( $wpdb->prepare( $items_sql, $args['limit'], $args['offset'] ) )
 			: $wpdb->get_results( $wpdb->prepare( $items_sql, $items_values ) );
 
-		if ( ! empty( $args['bot_filter'] ) ) {
+		if ( ! empty( $args['bot_filter'] ) || ! empty( $args['bot_name_filter'] ) || ! empty( $args['method_filter'] ) ) {
 			$items = array_values( array_filter( $items, function ( $item ) use ( $args ) {
 				$bot = self::identify_bot( $item->user_agent );
-				return $bot['type'] === $args['bot_filter'];
+
+				if ( ! empty( $args['bot_filter'] ) && $bot['type'] !== $args['bot_filter'] ) {
+					return false;
+				}
+				if ( ! empty( $args['bot_name_filter'] ) && $bot['name'] !== $args['bot_name_filter'] ) {
+					return false;
+				}
+				if ( ! empty( $args['method_filter'] ) && $item->request_method !== $args['method_filter'] ) {
+					return false;
+				}
+
+				return true;
 			} ) );
 		}
 
@@ -173,6 +184,22 @@ class MDFA_Request_Log {
 			'items' => $items,
 			'total' => $total,
 		];
+	}
+
+	public static function get_distinct_bot_names(): array {
+		global $wpdb;
+
+		$table = self::get_table_name();
+		$rows  = $wpdb->get_col( "SELECT DISTINCT user_agent FROM {$table}" );
+
+		$names = [];
+		foreach ( $rows as $ua ) {
+			$bot = self::identify_bot( $ua );
+			$names[ $bot['name'] ] = true;
+		}
+
+		ksort( $names );
+		return array_keys( $names );
 	}
 
 	public static function get_bot_stats(): array {

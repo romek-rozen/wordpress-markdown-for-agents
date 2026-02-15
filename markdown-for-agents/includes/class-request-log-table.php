@@ -19,11 +19,13 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 			'created_at'     => __( 'Data', 'markdown-for-agents' ),
 			'post_title'     => __( 'Post', 'markdown-for-agents' ),
 			'bot_name'       => __( 'Bot / Klient', 'markdown-for-agents' ),
+			'user_agent'     => __( 'User-Agent', 'markdown-for-agents' ),
 			'request_method' => __( 'Metoda', 'markdown-for-agents' ),
 			'tokens'         => __( 'Tokeny', 'markdown-for-agents' ),
 			'ip_address'     => __( 'IP', 'markdown-for-agents' ),
 		];
 	}
+
 
 	public function get_sortable_columns(): array {
 		return [
@@ -33,75 +35,86 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 	}
 
 	protected function get_views(): array {
-		$current    = $_GET['bot_filter'] ?? '';
-		$base_url   = admin_url( 'options-general.php?page=markdown-for-agents&tab=logs' );
-		$total      = MDFA_Request_Log::count_all();
+		$current  = sanitize_text_field( $_GET['bot_filter'] ?? '' );
+		$base_url = admin_url( 'options-general.php?page=markdown-for-agents&tab=logs' );
 
-		$views = [
-			'all' => sprintf(
-				'<a href="%s" class="%s">%s <span class="count">(%s)</span></a>',
-				esc_url( $base_url ),
-				empty( $current ) ? 'current' : '',
-				__( 'Wszystkie', 'markdown-for-agents' ),
-				number_format_i18n( $total )
-			),
-			'ai_bot' => sprintf(
-				'<a href="%s" class="%s">%s</a>',
-				esc_url( add_query_arg( 'bot_filter', 'ai_bot', $base_url ) ),
-				$current === 'ai_bot' ? 'current' : '',
-				__( 'Boty AI', 'markdown-for-agents' )
-			),
-			'search_crawler' => sprintf(
-				'<a href="%s" class="%s">%s</a>',
-				esc_url( add_query_arg( 'bot_filter', 'search_crawler', $base_url ) ),
-				$current === 'search_crawler' ? 'current' : '',
-				__( 'Wyszukiwarki', 'markdown-for-agents' )
-			),
-			'tool_crawler' => sprintf(
-				'<a href="%s" class="%s">%s</a>',
-				esc_url( add_query_arg( 'bot_filter', 'tool_crawler', $base_url ) ),
-				$current === 'tool_crawler' ? 'current' : '',
-				__( 'Narzędzia', 'markdown-for-agents' )
-			),
-			'browser' => sprintf(
-				'<a href="%s" class="%s">%s</a>',
-				esc_url( add_query_arg( 'bot_filter', 'browser', $base_url ) ),
-				$current === 'browser' ? 'current' : '',
-				__( 'Przeglądarki', 'markdown-for-agents' )
-			),
-			'unknown' => sprintf(
-				'<a href="%s" class="%s">%s</a>',
-				esc_url( add_query_arg( 'bot_filter', 'unknown', $base_url ) ),
-				$current === 'unknown' ? 'current' : '',
-				__( 'Nieznane', 'markdown-for-agents' )
-			),
+		$filters = [
+			''               => __( 'Wszystkie', 'markdown-for-agents' ),
+			'ai_bot'         => __( 'AI', 'markdown-for-agents' ),
+			'search_crawler' => __( 'Wyszukiwarki', 'markdown-for-agents' ),
+			'tool_crawler'   => __( 'Narzędzia', 'markdown-for-agents' ),
+			'browser'        => __( 'Przeglądarki', 'markdown-for-agents' ),
+			'unknown'        => __( 'Inne', 'markdown-for-agents' ),
 		];
+
+		$views = [];
+		foreach ( $filters as $key => $label ) {
+			$url   = $key === '' ? $base_url : add_query_arg( 'bot_filter', $key, $base_url );
+			$class = $current === $key ? 'current' : '';
+			$views[ $key ?: 'all' ] = sprintf(
+				'<a href="%s" class="%s">%s</a>',
+				esc_url( $url ),
+				$class,
+				esc_html( $label )
+			);
+		}
 
 		return $views;
 	}
 
+	protected function extra_tablenav( $which ): void {
+		if ( $which !== 'top' ) {
+			return;
+		}
+
+		$bot_name_filter = sanitize_text_field( $_GET['bot_name_filter'] ?? '' );
+		$method_filter   = sanitize_text_field( $_GET['method_filter'] ?? '' );
+		$bot_names       = MDFA_Request_Log::get_distinct_bot_names();
+
+		?>
+		<div class="alignleft actions">
+			<select name="bot_name_filter">
+				<option value=""><?php esc_html_e( 'Wszystkie boty', 'markdown-for-agents' ); ?></option>
+				<?php foreach ( $bot_names as $name ) : ?>
+					<option value="<?php echo esc_attr( $name ); ?>" <?php selected( $bot_name_filter, $name ); ?>>
+						<?php echo esc_html( $name ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+
+			<select name="method_filter">
+				<option value=""><?php esc_html_e( 'Wszystkie metody', 'markdown-for-agents' ); ?></option>
+				<option value="accept_header" <?php selected( $method_filter, 'accept_header' ); ?>>Accept header</option>
+				<option value="format_param" <?php selected( $method_filter, 'format_param' ); ?>>?format=md</option>
+			</select>
+
+			<?php submit_button( __( 'Filtruj', 'markdown-for-agents' ), '', 'filter_action', false ); ?>
+		</div>
+		<?php
+	}
+
 	public function prepare_items(): void {
-		$per_page = 20;
+		$screen   = get_current_screen();
+		$per_page = $screen
+			? (int) get_user_meta( get_current_user_id(), 'mdfa_logs_per_page', true ) ?: 20
+			: 20;
+
 		$current_page = $this->get_pagenum();
 
 		$args = [
-			'offset'     => ( $current_page - 1 ) * $per_page,
-			'limit'      => $per_page,
-			'order_by'   => sanitize_text_field( $_GET['orderby'] ?? 'created_at' ),
-			'order'      => sanitize_text_field( $_GET['order'] ?? 'DESC' ),
-			'bot_filter' => sanitize_text_field( $_GET['bot_filter'] ?? '' ),
-			'search'     => sanitize_text_field( $_GET['s'] ?? '' ),
+			'offset'          => ( $current_page - 1 ) * $per_page,
+			'limit'           => $per_page,
+			'order_by'        => sanitize_text_field( $_GET['orderby'] ?? 'created_at' ),
+			'order'           => sanitize_text_field( $_GET['order'] ?? 'DESC' ),
+			'bot_filter'      => sanitize_text_field( $_GET['bot_filter'] ?? '' ),
+			'bot_name_filter' => sanitize_text_field( $_GET['bot_name_filter'] ?? '' ),
+			'method_filter'   => sanitize_text_field( $_GET['method_filter'] ?? '' ),
+			'search'          => sanitize_text_field( $_GET['s'] ?? '' ),
 		];
 
 		$result = MDFA_Request_Log::get_filtered( $args );
 
 		$this->items = $result->items;
-
-		$this->_column_headers = [
-			$this->get_columns(),
-			[],
-			$this->get_sortable_columns(),
-		];
 
 		$this->set_pagination_args( [
 			'total_items' => $result->total,
@@ -131,10 +144,13 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 
 	public function column_bot_name( $item ): string {
 		$bot = MDFA_Request_Log::identify_bot( $item->user_agent );
+		return esc_html( $bot['name'] );
+	}
+
+	public function column_user_agent( $item ): string {
 		return sprintf(
-			'<span title="%s">%s</span>',
-			esc_attr( $item->user_agent ),
-			esc_html( $bot['name'] )
+			'<code style="word-break: break-all; font-size: 12px;">%s</code>',
+			esc_html( $item->user_agent )
 		);
 	}
 

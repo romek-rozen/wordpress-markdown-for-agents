@@ -26,9 +26,6 @@ class MDFA_Admin_Tab_Logs {
 		<form method="get" style="margin-top: 20px;">
 			<input type="hidden" name="page" value="markdown-for-agents" />
 			<input type="hidden" name="tab" value="logs" />
-			<?php if ( ! empty( $_GET['bot_filter'] ) ) : ?>
-				<input type="hidden" name="bot_filter" value="<?php echo esc_attr( $_GET['bot_filter'] ); ?>" />
-			<?php endif; ?>
 			<?php $table->search_box( __( 'Szukaj posta', 'markdown-for-agents' ), 'post_search' ); ?>
 			<?php $table->views(); ?>
 			<?php $table->display(); ?>
