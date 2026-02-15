@@ -1,0 +1,5 @@
+markdown-for-agents/vendor/
+markdown-for-agents/composer.lock
+*.zip
+poc.md
+.DS_Store
