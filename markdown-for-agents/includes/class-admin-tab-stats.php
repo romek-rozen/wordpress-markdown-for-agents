@@ -162,7 +162,7 @@ class MDFA_Admin_Tab_Stats {
 									<td><?php echo esc_html( $i + 1 ); ?></td>
 									<td>
 										<?php if ( $post->post_title ) : ?>
-											<a href="<?php echo esc_url( get_edit_post_link( $post->post_id ) ); ?>">
+											<a href="<?php echo esc_url( admin_url( 'options-general.php?page=markdown-for-agents&tab=logs&post_id_filter=' . $post->post_id ) ); ?>">
 												<?php echo esc_html( $post->post_title ); ?>
 											</a>
 										<?php else : ?>

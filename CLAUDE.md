@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WordPress plugin implementing the **Markdown for Agents** specification (Cloudflare, Feb 2026). Serves AI agents (GPTBot, ClaudeBot, Gemini etc.) with Markdown instead of HTML, reducing token usage ~80%.
 
+- **Working version:** 1.0.3 (in development)
 - **Language:** PHP 8.0+
 - **Platform:** WordPress 6.0+ (requires Gutenberg block content)
 - **Spec references:** [Cloudflare blog](https://blog.cloudflare.com/markdown-for-agents/), [Cloudflare docs](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/), [Content Signals](https://contentsignals.org/)
@@ -57,7 +58,7 @@ Four-layer content discovery system:
 
 **WooCommerce support:** Converter uses universal taxonomy retrieval (`get_object_taxonomies()`) for any post type. For `product` post type, frontmatter includes `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` via WooCommerce API (guarded by `function_exists('wc_get_product')`).
 
-**HTTP headers:** `Content-Type: text/markdown; charset=utf-8`, `Vary: Accept`, `X-Markdown-Tokens: <count>`, `Content-Signal: ai-train=yes, search=yes, ai-input=yes`, `X-Robots-Tag: noindex`.
+**HTTP headers:** `Content-Type: text/markdown; charset=utf-8`, `Vary: Accept`, `X-Markdown-Tokens: <count>`, `Content-Signal: ai-train=yes, search=yes, ai-input=yes`, `X-Robots-Tag: noindex`, `Link: <url>; rel="canonical"` (RFC 5988, configurable).
 
 **Caching:** WordPress Transients API, key `mdfa_md_{post_id}_{modified_hash}`, invalidated on `save_post` via post meta `_mdfa_cache_key`.
 
@@ -127,6 +128,11 @@ curl -s 'http://localhost:8080/category/uncategorized/?format=md'
 curl -s -H 'Accept: text/markdown' 'http://localhost:8080/category/uncategorized/'
 ```
 
+## Changelog
+
+After every feature/fix, update `CHANGELOG.md` under the current working version. Keep entries concise (one line per change). When releasing a new version, also bump `MDFA_VERSION` in `markdown-for-agents.php` and update `Working version` above.
+
+
 ## Sprint Status
 
 - **Sprint 1 (MVP)** — DONE: converter, content negotiation, discovery tag, HTTP headers, token estimator, request logging, Docker dev env
@@ -135,4 +141,6 @@ curl -s -H 'Accept: text/markdown' 'http://localhost:8080/category/uncategorized
 - **Sprint 2.6** — DONE: WooCommerce compatibility (universal taxonomy retrieval, product frontmatter with add_to_cart_url/price/currency/sku/in_stock)
 - **Sprint 2.7** — DONE: Auto-update from Forgejo repository (releases API, folder fix for archive ZIP)
 - **Sprint 3** — DONE: Taxonomy archive support (categories, tags, WooCommerce product_cat/product_tag, custom taxonomies). Archive frontmatter + post list + subcategories + pagination. DB migration for term_id/taxonomy in request log. Settings UI for enabled taxonomies.
+- **Sprint 3.1** — DONE: HTTP `Link: rel="canonical"` header (RFC 5988) pointing to original HTML page, configurable in settings (default: on)
 - **Sprint 4** — TODO: rewrite rules (`/slug/index.md`), page builder compatibility
+

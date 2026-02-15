@@ -133,6 +133,7 @@ class MDFA_Request_Log {
 			'order'      => 'DESC',
 			'bot_filter' => '',
 			'search'     => '',
+			'post_id'    => 0,
 		];
 
 		$args  = wp_parse_args( $args, $defaults );
@@ -143,6 +144,11 @@ class MDFA_Request_Log {
 		if ( ! empty( $args['search'] ) ) {
 			$where[] = 'p.post_title LIKE %s';
 			$values[] = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+		}
+
+		if ( ! empty( $args['post_id'] ) ) {
+			$where[] = 'l.post_id = %d';
+			$values[] = (int) $args['post_id'];
 		}
 
 		$where_sql = implode( ' AND ', $where );
@@ -187,6 +193,21 @@ class MDFA_Request_Log {
 			'items' => $items,
 			'total' => $total,
 		];
+	}
+
+	public static function get_distinct_posts(): array {
+		global $wpdb;
+
+		$table = self::get_table_name();
+
+		return $wpdb->get_results(
+			"SELECT l.post_id, p.post_title, COUNT(*) as request_count
+			FROM {$table} l
+			LEFT JOIN {$wpdb->posts} p ON l.post_id = p.ID
+			WHERE l.post_id > 0
+			GROUP BY l.post_id, p.post_title
+			ORDER BY request_count DESC"
+		);
 	}
 
 	public static function get_distinct_bot_names(): array {

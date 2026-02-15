@@ -33,6 +33,12 @@ class MDFA_Admin_Tab_Settings {
 			'default'           => true,
 		] );
 
+		register_setting( 'mdfa_settings', 'mdfa_canonical', [
+			'type'              => 'boolean',
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'default'           => true,
+		] );
+
 		register_setting( 'mdfa_settings', 'mdfa_ai_bots', [
 			'type'              => 'array',
 			'sanitize_callback' => [ __CLASS__, 'sanitize_bot_list' ],
@@ -94,6 +100,14 @@ class MDFA_Admin_Tab_Settings {
 			'mdfa_noindex',
 			__( 'Indeksowanie Markdown', 'markdown-for-agents' ),
 			[ __CLASS__, 'render_noindex_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_field(
+			'mdfa_canonical',
+			__( 'Nagłówek canonical', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_canonical_field' ],
 			'markdown-for-agents',
 			'mdfa_general'
 		);
@@ -194,6 +208,15 @@ class MDFA_Admin_Tab_Settings {
 			checked( $noindex, true, false )
 		);
 		echo '<p class="description">' . esc_html__( 'Wysyłaj nagłówek X-Robots-Tag: noindex dla odpowiedzi Markdown. Odznacz, aby wyszukiwarki mogły indeksować wersję Markdown.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_canonical_field(): void {
+		$canonical = get_option( 'mdfa_canonical', true );
+		printf(
+			'<input type="checkbox" name="mdfa_canonical" value="1" %s />',
+			checked( $canonical, true, false )
+		);
+		echo '<p class="description">' . esc_html__( 'Wysyłaj nagłówek HTTP Link: rel="canonical" wskazujący na oryginalną stronę HTML. Zalecane przez Google dla treści w formatach innych niż HTML (RFC 5988).', 'markdown-for-agents' ) . '</p>';
 	}
 
 	public static function render_cache_ttl_field(): void {

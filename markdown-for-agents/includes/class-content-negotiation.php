@@ -60,7 +60,7 @@ class MDFA_Content_Negotiation {
 
 		MDFA_Request_Log::log( $post->ID, $tokens );
 
-		self::send_markdown_response( $markdown, $tokens );
+		self::send_markdown_response( $markdown, $tokens, get_permalink( $post ) );
 	}
 
 	private static function handle_archive_request( WP_Term $term ): void {
@@ -80,10 +80,10 @@ class MDFA_Content_Negotiation {
 
 		MDFA_Request_Log::log( 0, $tokens, $term->term_id, $term->taxonomy );
 
-		self::send_markdown_response( $markdown, $tokens );
+		self::send_markdown_response( $markdown, $tokens, get_term_link( $term ) );
 	}
 
-	private static function send_markdown_response( string $markdown, int $tokens ): void {
+	private static function send_markdown_response( string $markdown, int $tokens, string $canonical_url = '' ): void {
 		status_header( 200 );
 		header( 'Content-Type: text/markdown; charset=utf-8' );
 		header( 'Vary: Accept' );
@@ -91,6 +91,9 @@ class MDFA_Content_Negotiation {
 		header( 'Content-Signal: ai-train=yes, search=yes, ai-input=yes' );
 		if ( get_option( 'mdfa_noindex', true ) ) {
 			header( 'X-Robots-Tag: noindex' );
+		}
+		if ( $canonical_url && get_option( 'mdfa_canonical', true ) ) {
+			header( 'Link: <' . esc_url( $canonical_url ) . '>; rel="canonical"' );
 		}
 
 		echo $markdown;

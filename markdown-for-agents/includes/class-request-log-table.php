@@ -67,12 +67,23 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 			return;
 		}
 
+		$post_id_filter  = absint( $_GET['post_id_filter'] ?? 0 );
 		$bot_name_filter = sanitize_text_field( $_GET['bot_name_filter'] ?? '' );
 		$method_filter   = sanitize_text_field( $_GET['method_filter'] ?? '' );
 		$bot_names       = MDFA_Request_Log::get_distinct_bot_names();
+		$posts           = MDFA_Request_Log::get_distinct_posts();
 
 		?>
 		<div class="alignleft actions">
+			<select name="post_id_filter">
+				<option value=""><?php esc_html_e( 'Wszystkie posty', 'markdown-for-agents' ); ?></option>
+				<?php foreach ( $posts as $post ) : ?>
+					<option value="<?php echo esc_attr( $post->post_id ); ?>" <?php selected( $post_id_filter, (int) $post->post_id ); ?>>
+						<?php echo esc_html( $post->post_title ?: '#' . $post->post_id ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+
 			<select name="bot_name_filter">
 				<option value=""><?php esc_html_e( 'Wszystkie boty', 'markdown-for-agents' ); ?></option>
 				<?php foreach ( $bot_names as $name ) : ?>
@@ -110,6 +121,7 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 			'bot_name_filter' => sanitize_text_field( $_GET['bot_name_filter'] ?? '' ),
 			'method_filter'   => sanitize_text_field( $_GET['method_filter'] ?? '' ),
 			'search'          => sanitize_text_field( $_GET['s'] ?? '' ),
+			'post_id'         => absint( $_GET['post_id_filter'] ?? 0 ),
 		];
 
 		$result = MDFA_Request_Log::get_filtered( $args );

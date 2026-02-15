@@ -2,6 +2,14 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.3] — 2026-02-15
+
+### Dodane
+- Nagłówek HTTP `Link: <url>; rel="canonical"` w odpowiedziach Markdown wskazujący na oryginalną stronę HTML (RFC 5988)
+- Ustawienie włączenia/wyłączenia nagłówka canonical (domyślnie włączony)
+- Filtr po poście w zakładce Logi (dropdown "Wszystkie posty")
+- Kliknięcie tytułu posta w "Najpopularniejsze posty" przenosi do logów przefiltrowanych na ten post
+
 ## [1.0.2] — 2026-02-15
 
 ### Dodane

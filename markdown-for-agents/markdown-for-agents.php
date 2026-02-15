@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MDFA_VERSION', '1.0.2' );
+define( 'MDFA_VERSION', '1.0.3' );
 define( 'MDFA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once MDFA_PLUGIN_DIR . 'vendor/autoload.php';
@@ -40,6 +40,7 @@ register_activation_hook( __FILE__, function () {
 	add_option( 'mdfa_post_types', [ 'post', 'page' ] );
 	add_option( 'mdfa_taxonomies', [ 'category', 'post_tag' ] );
 	add_option( 'mdfa_cache_ttl', 3600 );
+	add_option( 'mdfa_canonical', true );
 	add_option( 'mdfa_db_version', 2 );
 	MDFA_Request_Log::create_table();
 } );
