@@ -10,6 +10,7 @@
  * Plugin URI: https://rozenberger.com/markdown-for-agents
  * License: GPL v2 or later
  * Text Domain: markdown-for-agents
+ * Update URI: https://repo.nimblio.work/roman/wordpress-markdown-for-agents
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -26,6 +27,7 @@ require_once MDFA_PLUGIN_DIR . 'includes/class-request-log.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-request-log-table.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-stats-tracker.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-admin.php';
+require_once MDFA_PLUGIN_DIR . 'includes/class-updater.php';
 
 register_activation_hook( __FILE__, function () {
 	if ( version_compare( PHP_VERSION, '8.0', '<' ) ) {
@@ -76,6 +78,7 @@ add_action( 'plugins_loaded', function () {
 		);
 	}
 
+	MDFA_Updater::init( __FILE__ );
 	MDFA_Admin::init();
 
 	if ( ! get_option( 'mdfa_enabled', true ) ) {

@@ -31,6 +31,7 @@ wp-markdown-for-agents/                  # repo root
         ├── class-request-log.php        # request logging (custom DB table) + bot identification
         ├── class-request-log-table.php  # WP_List_Table for logs (filtering, sorting, pagination)
         ├── class-stats-tracker.php      # HTML request counter + token estimation
+        ├── class-updater.php           # auto-update from Forgejo repository
         └── class-admin.php              # wp-admin settings (tabs: settings, logs, stats)
 ```
 
@@ -55,6 +56,8 @@ Four-layer content discovery system:
 
 **Caching:** WordPress Transients API, key `mdfa_md_{post_id}_{modified_hash}`, invalidated on `save_post` via post meta `_mdfa_cache_key`.
 
+**Auto-update:** `MDFA_Updater` checks Forgejo releases API (`repo.nimblio.work`) every 12h via WordPress Transients. Uses `site_transient_update_plugins` + `plugins_api` filters. `upgrader_source_selection` fixes folder structure from Forgejo archive ZIP.
+
 **Request logging:** Custom table `wp_mdfa_request_log` — logs every markdown request with post_id, request_method (accept_header/format_param), user_agent, ip_address, tokens, timestamp.
 
 ## Classes
@@ -68,6 +71,7 @@ Four-layer content discovery system:
 | MDFA_Request_Log | `includes/class-request-log.php` | Request logging + bot identification + stats queries |
 | MDFA_Request_Log_Table | `includes/class-request-log-table.php` | WP_List_Table with filtering, sorting, pagination |
 | MDFA_Stats_Tracker | `includes/class-stats-tracker.php` | HTML request counter + token estimation |
+| MDFA_Updater | `includes/class-updater.php` | Auto-update from Forgejo releases API |
 | MDFA_Admin | `includes/class-admin.php` | Tabbed admin (settings, logs, stats) |
 
 ## Performance Note
@@ -115,4 +119,5 @@ docker compose exec db mysql -uroot -proot wordpress -e "SELECT * FROM wp_mdfa_r
 - **Sprint 2** — DONE: wp-admin settings page (post types, cache TTL, enable/disable), log viewer, uninstall cleanup, prefix rename MFA→MDFA with auto-migration, i18n
 - **Sprint 2.5** — DONE: tabbed admin (settings/logs/stats), WP_List_Table with bot identification + filtering + pagination, HTML vs Markdown stats comparison, bot distribution chart, top posts, token stats, X-Robots-Tag: noindex
 - **Sprint 2.6** — DONE: WooCommerce compatibility (universal taxonomy retrieval, product frontmatter with add_to_cart_url/price/currency/sku/in_stock)
+- **Sprint 2.7** — DONE: Auto-update from Forgejo repository (releases API, folder fix for archive ZIP)
 - **Sprint 3** — TODO: taxonomy archive support (categories, tags, custom taxonomies — see `taxonomy_plan.md`), rewrite rules (`/slug/index.md`), page builder compatibility

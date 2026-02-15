@@ -15,6 +15,7 @@ WordPress plugin implementing the [Markdown for Agents](https://blog.cloudflare.
 - **Bot identification** — recognizes 24+ AI bots (GPTBot, ClaudeBot, Googlebot, PerplexityBot, etc.)
 - **Statistics dashboard** — HTML vs Markdown comparison, bot distribution chart, top posts, token stats
 - **Admin settings** — tabbed interface: settings, request logs, statistics
+- **Auto-update** — automatic updates from Forgejo repository (no ZIP uploading needed)
 - **Clean uninstall** — removes all data (table, options, cache) when plugin is deleted
 
 ## Requirements
@@ -64,6 +65,14 @@ Enable the `product` post type in settings. Product frontmatter includes add-to-
 4. HTML is converted to Markdown via [league/html-to-markdown](https://github.com/thephpleague/html-to-markdown)
 5. YAML frontmatter with post metadata is prepended
 6. Response is served with proper headers and cached via WordPress Transients
+
+## Releasing a new version
+
+1. Update `MDFA_VERSION` in `markdown-for-agents/markdown-for-agents.php`
+2. Update `Version:` in the plugin header to match
+3. Commit and push to master
+4. Create a Release in Forgejo with tag `v{version}` (e.g. `v1.1.0`)
+5. WordPress installations will detect the update within 12 hours (or on next plugin check)
 
 ## Planned features
 
