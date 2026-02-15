@@ -132,6 +132,30 @@ curl -s -H 'Accept: text/markdown' 'http://localhost:8080/category/uncategorized
 
 After every feature/fix, update `CHANGELOG.md` under the current working version. Keep entries concise (one line per change). When releasing a new version, also bump `MDFA_VERSION` in `markdown-for-agents.php` and update `Working version` above.
 
+## Release Process
+
+1. Upewnij się, że `MDFA_VERSION` w `markdown-for-agents.php` i `CHANGELOG.md` są aktualne
+2. Commit + push wszystkich zmian
+3. Utwórz tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
+4. Utwórz release na Forgejo via API:
+   ```bash
+   curl -s -X POST 'https://repo.nimblio.work/api/v1/repos/roman/wordpress-markdown-for-agents/releases' \
+     -H 'Content-Type: application/json' \
+     -H "Authorization: token $FORGEJO_TOKEN" \
+     -d '{"tag_name":"vX.Y.Z","name":"vX.Y.Z","body":"opis zmian","draft":false,"prerelease":false}'
+   ```
+5. **Zbuduj ZIP tylko z folderu `markdown-for-agents/`** (archiwum repo zawiera pliki dev — CLAUDE.md, poc.md, docker-compose.yml):
+   ```bash
+   zip -r /tmp/markdown-for-agents-X.Y.Z.zip markdown-for-agents/ -x "*/.DS_Store"
+   ```
+6. Uploaduj ZIP jako asset do release (updater preferuje attached asset nad archiwum repo):
+   ```bash
+   curl -s -X POST "https://repo.nimblio.work/api/v1/repos/roman/wordpress-markdown-for-agents/releases/{RELEASE_ID}/assets" \
+     -H "Authorization: token $FORGEJO_TOKEN" \
+     -F "attachment=@/tmp/markdown-for-agents-X.Y.Z.zip"
+   ```
+7. Token Forgejo jest w `.env` jako `FORGEJO-TOKEN`
+
 
 ## Sprint Status
 
