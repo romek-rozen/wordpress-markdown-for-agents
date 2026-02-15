@@ -1,14 +1,14 @@
 <?php
 /**
- * Auto-updater from Forgejo repository.
+ * Auto-updater from GitHub repository.
  */
 
 defined( 'ABSPATH' ) || exit;
 
 class MDFA_Updater {
 
-	private const REPO_URL  = 'https://repo.nimblio.work/roman/wordpress-markdown-for-agents';
-	private const API_URL   = 'https://repo.nimblio.work/api/v1/repos/roman/wordpress-markdown-for-agents';
+	private const REPO_URL  = 'https://github.com/romek-rozen/wordpress-markdown-for-agents';
+	private const API_URL   = 'https://api.github.com/repos/romek-rozen/wordpress-markdown-for-agents';
 	private const CACHE_KEY = 'mdfa_update_check';
 	private const CACHE_TTL = 43200; // 12 hours
 
@@ -26,7 +26,7 @@ class MDFA_Updater {
 	}
 
 	/**
-	 * Fetch latest release info from Forgejo API (cached).
+	 * Fetch latest release info from GitHub API (cached).
 	 */
 	private static function get_remote_release(): ?object {
 		$cached = get_transient( self::CACHE_KEY );
@@ -36,7 +36,10 @@ class MDFA_Updater {
 
 		$response = wp_remote_get( self::API_URL . '/releases/latest', [
 			'timeout' => 10,
-			'headers' => [ 'Accept' => 'application/json' ],
+			'headers' => [
+				'Accept'     => 'application/vnd.github+json',
+				'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . get_bloginfo( 'url' ),
+			],
 		] );
 
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
@@ -73,8 +76,8 @@ class MDFA_Updater {
 				}
 			}
 		}
-		// Fallback to archive.
-		return self::REPO_URL . '/archive/' . $release->tag_name . '.zip';
+		// Fallback to GitHub archive.
+		return self::REPO_URL . '/archive/refs/tags/' . $release->tag_name . '.zip';
 	}
 
 	/**
@@ -152,7 +155,7 @@ class MDFA_Updater {
 	/**
 	 * Fix extracted folder name after download.
 	 *
-	 * Forgejo archive ZIP extracts to 'wordpress-markdown-for-agents/' which contains
+	 * GitHub archive ZIP extracts to 'wordpress-markdown-for-agents-{tag}/' which contains
 	 * the plugin in 'markdown-for-agents/' subdirectory. We need to point WordPress
 	 * to the correct subdirectory, or rename if using a release asset ZIP.
 	 */
@@ -163,7 +166,7 @@ class MDFA_Updater {
 
 		global $wp_filesystem;
 
-		// Check if this is a Forgejo archive (contains the repo name as root folder).
+		// Check if this is a GitHub archive (contains the repo name as root folder).
 		$plugin_subdir = trailingslashit( $source ) . 'markdown-for-agents/';
 		if ( $wp_filesystem->is_dir( $plugin_subdir ) ) {
 			// Archive structure: wordpress-markdown-for-agents-{tag}/markdown-for-agents/

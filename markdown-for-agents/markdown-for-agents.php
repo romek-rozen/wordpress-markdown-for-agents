@@ -10,7 +10,7 @@
  * Plugin URI: https://github.com/romek-rozen/wordpress-markdown-for-agents
  * License: GPL v2 or later
  * Text Domain: markdown-for-agents
- * Update URI: https://repo.nimblio.work/roman/wordpress-markdown-for-agents
+ * Update URI: https://github.com/romek-rozen/wordpress-markdown-for-agents
  */
 
 defined( 'ABSPATH' ) || exit;
