@@ -44,6 +44,24 @@ class MDFA_Admin {
 			'default'           => true,
 		] );
 
+		register_setting( 'mdfa_settings', 'mdfa_ai_bots', [
+			'type'              => 'array',
+			'sanitize_callback' => [ __CLASS__, 'sanitize_bot_list' ],
+			'default'           => MDFA_Request_Log::DEFAULT_AI_BOTS,
+		] );
+
+		register_setting( 'mdfa_settings', 'mdfa_search_crawlers', [
+			'type'              => 'array',
+			'sanitize_callback' => [ __CLASS__, 'sanitize_bot_list' ],
+			'default'           => MDFA_Request_Log::DEFAULT_SEARCH_CRAWLERS,
+		] );
+
+		register_setting( 'mdfa_settings', 'mdfa_tool_crawlers', [
+			'type'              => 'array',
+			'sanitize_callback' => [ __CLASS__, 'sanitize_bot_list' ],
+			'default'           => MDFA_Request_Log::DEFAULT_TOOL_CRAWLERS,
+		] );
+
 		add_settings_section(
 			'mdfa_general',
 			__( 'Ustawienia ogólne', 'markdown-for-agents' ),
@@ -79,6 +97,30 @@ class MDFA_Admin {
 			'mdfa_noindex',
 			__( 'Indeksowanie Markdown', 'markdown-for-agents' ),
 			[ __CLASS__, 'render_noindex_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_field(
+			'mdfa_ai_bots',
+			__( 'Boty AI', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_ai_bots_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_field(
+			'mdfa_search_crawlers',
+			__( 'Crawlery wyszukiwarek', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_search_crawlers_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_field(
+			'mdfa_tool_crawlers',
+			__( 'Crawlery narzędzi', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_tool_crawlers_field' ],
 			'markdown-for-agents',
 			'mdfa_general'
 		);
@@ -122,6 +164,43 @@ class MDFA_Admin {
 			checked( $noindex, true, false )
 		);
 		echo '<p class="description">' . esc_html__( 'Wysyłaj nagłówek X-Robots-Tag: noindex dla odpowiedzi Markdown. Odznacz, aby wyszukiwarki mogły indeksować wersję Markdown.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function sanitize_bot_list( mixed $value ): array {
+		if ( is_array( $value ) ) {
+			$value = implode( "\n", $value );
+		}
+		$lines = explode( "\n", (string) $value );
+		$lines = array_map( 'trim', $lines );
+		$lines = array_filter( $lines, fn( $l ) => $l !== '' );
+		return array_values( array_unique( $lines ) );
+	}
+
+	public static function render_ai_bots_field(): void {
+		$bots = (array) get_option( 'mdfa_ai_bots', MDFA_Request_Log::DEFAULT_AI_BOTS );
+		printf(
+			'<textarea name="mdfa_ai_bots" rows="8" cols="40" class="large-text code">%s</textarea>',
+			esc_textarea( implode( "\n", $bots ) )
+		);
+		echo '<p class="description">' . esc_html__( 'Jedna nazwa bota na linię. Dopasowanie po fragmencie User-Agent (bez rozróżniania wielkości liter).', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_search_crawlers_field(): void {
+		$crawlers = (array) get_option( 'mdfa_search_crawlers', MDFA_Request_Log::DEFAULT_SEARCH_CRAWLERS );
+		printf(
+			'<textarea name="mdfa_search_crawlers" rows="6" cols="40" class="large-text code">%s</textarea>',
+			esc_textarea( implode( "\n", $crawlers ) )
+		);
+		echo '<p class="description">' . esc_html__( 'Crawlery wyszukiwarek (Google, Bing, etc.). Jedna nazwa na linię.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_tool_crawlers_field(): void {
+		$crawlers = (array) get_option( 'mdfa_tool_crawlers', MDFA_Request_Log::DEFAULT_TOOL_CRAWLERS );
+		printf(
+			'<textarea name="mdfa_tool_crawlers" rows="6" cols="40" class="large-text code">%s</textarea>',
+			esc_textarea( implode( "\n", $crawlers ) )
+		);
+		echo '<p class="description">' . esc_html__( 'Crawlery narzędzi zewnętrznych (Ahrefs, Semrush, social media, etc.). Jedna nazwa na linię.', 'markdown-for-agents' ) . '</p>';
 	}
 
 	public static function render_cache_ttl_field(): void {

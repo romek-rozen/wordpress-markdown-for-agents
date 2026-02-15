@@ -45,11 +45,23 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 				__( 'Wszystkie', 'markdown-for-agents' ),
 				number_format_i18n( $total )
 			),
-			'bot' => sprintf(
+			'ai_bot' => sprintf(
 				'<a href="%s" class="%s">%s</a>',
-				esc_url( add_query_arg( 'bot_filter', 'bot', $base_url ) ),
-				$current === 'bot' ? 'current' : '',
+				esc_url( add_query_arg( 'bot_filter', 'ai_bot', $base_url ) ),
+				$current === 'ai_bot' ? 'current' : '',
 				__( 'Boty AI', 'markdown-for-agents' )
+			),
+			'search_crawler' => sprintf(
+				'<a href="%s" class="%s">%s</a>',
+				esc_url( add_query_arg( 'bot_filter', 'search_crawler', $base_url ) ),
+				$current === 'search_crawler' ? 'current' : '',
+				__( 'Wyszukiwarki', 'markdown-for-agents' )
+			),
+			'tool_crawler' => sprintf(
+				'<a href="%s" class="%s">%s</a>',
+				esc_url( add_query_arg( 'bot_filter', 'tool_crawler', $base_url ) ),
+				$current === 'tool_crawler' ? 'current' : '',
+				__( 'Narzędzia', 'markdown-for-agents' )
 			),
 			'browser' => sprintf(
 				'<a href="%s" class="%s">%s</a>',

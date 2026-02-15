@@ -4,30 +4,38 @@ class MDFA_Request_Log {
 
 	private static string $table_name_suffix = 'mdfa_request_log';
 
-	private static array $bot_patterns = [
-		'GPTBot'              => '/GPTBot/i',
-		'OAI-SearchBot'       => '/OAI-SearchBot/i',
-		'ChatGPT-User'        => '/ChatGPT-User/i',
-		'ClaudeBot'           => '/ClaudeBot/i',
-		'Claude-User'         => '/Claude-User/i',
-		'Claude-SearchBot'    => '/Claude-SearchBot/i',
-		'Googlebot'           => '/Googlebot/i',
-		'Google-Extended'     => '/Google-Extended/i',
-		'GoogleOther'         => '/GoogleOther/i',
-		'Bingbot'             => '/bingbot/i',
-		'CCBot'               => '/CCBot/i',
-		'Bytespider'          => '/Bytespider/i',
-		'PetalBot'            => '/PetalBot/i',
-		'Applebot'            => '/Applebot/i',
-		'facebookexternalhit' => '/facebookexternalhit/i',
-		'Twitterbot'          => '/Twitterbot/i',
-		'LinkedInBot'         => '/LinkedInBot/i',
-		'Slurp'               => '/Slurp/i',
-		'YandexBot'           => '/YandexBot/i',
-		'DuckDuckBot'         => '/DuckDuckBot/i',
-		'Amazonbot'           => '/Amazonbot/i',
-		'PerplexityBot'       => '/PerplexityBot/i',
-		'Perplexity-User'     => '/Perplexity-User/i',
+	public const DEFAULT_AI_BOTS = [
+		'GPTBot',
+		'OAI-SearchBot',
+		'ChatGPT-User',
+		'ClaudeBot',
+		'Claude-User',
+		'Claude-SearchBot',
+		'PerplexityBot',
+		'Perplexity-User',
+		'Google-Extended',
+		'CCBot',
+		'Bytespider',
+	];
+
+	public const DEFAULT_SEARCH_CRAWLERS = [
+		'Googlebot',
+		'GoogleOther',
+		'bingbot',
+		'Applebot',
+		'YandexBot',
+		'DuckDuckBot',
+		'Slurp',
+	];
+
+	public const DEFAULT_TOOL_CRAWLERS = [
+		'AhrefsBot',
+		'SemrushBot',
+		'PetalBot',
+		'Amazonbot',
+		'facebookexternalhit',
+		'Twitterbot',
+		'LinkedInBot',
 	];
 
 	public static function get_table_name(): string {
@@ -59,10 +67,34 @@ class MDFA_Request_Log {
 	}
 
 	public static function identify_bot( string $user_agent ): array {
-		foreach ( self::$bot_patterns as $name => $pattern ) {
-			if ( preg_match( $pattern, $user_agent ) ) {
+		$ai_bots         = (array) get_option( 'mdfa_ai_bots', self::DEFAULT_AI_BOTS );
+		$search_crawlers = (array) get_option( 'mdfa_search_crawlers', self::DEFAULT_SEARCH_CRAWLERS );
+		$tool_crawlers   = (array) get_option( 'mdfa_tool_crawlers', self::DEFAULT_TOOL_CRAWLERS );
+
+		$ua_lower = mb_strtolower( $user_agent );
+
+		foreach ( $ai_bots as $name ) {
+			if ( $name !== '' && stripos( $ua_lower, mb_strtolower( $name ) ) !== false ) {
 				return [
-					'type' => 'bot',
+					'type' => 'ai_bot',
+					'name' => $name,
+				];
+			}
+		}
+
+		foreach ( $search_crawlers as $name ) {
+			if ( $name !== '' && stripos( $ua_lower, mb_strtolower( $name ) ) !== false ) {
+				return [
+					'type' => 'search_crawler',
+					'name' => $name,
+				];
+			}
+		}
+
+		foreach ( $tool_crawlers as $name ) {
+			if ( $name !== '' && stripos( $ua_lower, mb_strtolower( $name ) ) !== false ) {
+				return [
+					'type' => 'tool_crawler',
 					'name' => $name,
 				];
 			}
@@ -70,7 +102,7 @@ class MDFA_Request_Log {
 
 		if ( preg_match( '/(bot|crawler|spider|scraper)/i', $user_agent ) ) {
 			return [
-				'type' => 'bot',
+				'type' => 'crawler',
 				'name' => __( 'Inny bot', 'markdown-for-agents' ),
 			];
 		}
