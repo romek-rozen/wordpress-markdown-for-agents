@@ -3,7 +3,7 @@
 class MDFA_Content_Negotiation {
 
 	public static function init(): void {
-		add_action( 'template_redirect', [ __CLASS__, 'handle_markdown_request' ], 5 );
+		add_action( 'template_redirect', [ __CLASS__, 'handle_markdown_request' ], 0 );
 		add_action( 'send_headers', [ __CLASS__, 'add_vary_header' ] );
 	}
 
