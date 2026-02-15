@@ -64,7 +64,7 @@ class MDFA_Content_Negotiation {
 
 		MDFA_Request_Log::log( $post->ID, $tokens );
 
-		self::send_markdown_response( $markdown, $tokens, get_permalink( $post ) );
+		self::send_markdown_response( $markdown, $tokens, get_permalink( $post ), $post );
 	}
 
 	private static function handle_archive_request( WP_Term $term ): void {
@@ -84,22 +84,23 @@ class MDFA_Content_Negotiation {
 
 		MDFA_Request_Log::log( 0, $tokens, $term->term_id, $term->taxonomy );
 
-		self::send_markdown_response( $markdown, $tokens, get_term_link( $term ) );
+		self::send_markdown_response( $markdown, $tokens, get_term_link( $term ), null, $term );
 	}
 
-	private static function send_markdown_response( string $markdown, int $tokens, string $canonical_url = '' ): void {
+	private static function send_markdown_response( string $markdown, int $tokens, string $canonical_url = '', ?WP_Post $post = null, ?WP_Term $term = null ): void {
 		status_header( 200 );
 		header( 'Content-Type: text/markdown; charset=utf-8' );
 		header( 'Vary: Accept' );
 		header( 'X-Markdown-Tokens: ' . $tokens );
-		$signals = [];
-		if ( get_option( 'mdfa_signal_ai_train', true ) ) {
+		$resolved = MDFA_Content_Signals::get_signals( $post, $term );
+		$signals  = [];
+		if ( $resolved['ai_train'] ) {
 			$signals[] = 'ai-train=yes';
 		}
-		if ( get_option( 'mdfa_signal_search', true ) ) {
+		if ( $resolved['search'] ) {
 			$signals[] = 'search=yes';
 		}
-		if ( get_option( 'mdfa_signal_ai_input', true ) ) {
+		if ( $resolved['ai_input'] ) {
 			$signals[] = 'ai-input=yes';
 		}
 		if ( ! empty( $signals ) ) {

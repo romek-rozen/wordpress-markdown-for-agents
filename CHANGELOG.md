@@ -2,6 +2,11 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.5] — 2026-02-15
+
+### Dodane
+- Override Content-Signal per post (meta box) i per taxonomy term (term meta fields) z fallbackiem na globalne ustawienia
+
 ## [1.0.4] — 2026-02-15
 
 ### Poprawione (bezpieczeństwo)

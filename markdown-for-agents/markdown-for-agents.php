@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Markdown for Agents
  * Description: Serves AI agents with Markdown instead of HTML, reducing token usage ~80%. Implements Cloudflare's Markdown for Agents specification.
- * Version: 1.0.4
+ * Version: 1.0.5
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Author: Romek
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MDFA_VERSION', '1.0.4' );
+define( 'MDFA_VERSION', '1.0.5' );
 define( 'MDFA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once MDFA_PLUGIN_DIR . 'vendor/autoload.php';
@@ -30,6 +30,7 @@ require_once MDFA_PLUGIN_DIR . 'includes/class-admin-tab-settings.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-admin-tab-logs.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-admin-tab-stats.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-admin.php';
+require_once MDFA_PLUGIN_DIR . 'includes/class-content-signals.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-updater.php';
 
 register_activation_hook( __FILE__, function () {
@@ -93,5 +94,6 @@ add_action( 'plugins_loaded', function () {
 	}
 	MDFA_Discovery::init();
 	MDFA_Content_Negotiation::init();
+	MDFA_Content_Signals::init();
 	MDFA_Stats_Tracker::init();
 } );

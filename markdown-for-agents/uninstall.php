@@ -28,8 +28,11 @@ delete_transient( 'mdfa_update_check_beta' );
 // Usuń tabelę logów
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mdfa_request_log" );
 
-// Usuń post meta (klucze cache + HTML tokens)
-$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ('_mdfa_cache_key', '_mdfa_html_tokens')" );
+// Usuń post meta (klucze cache + HTML tokens + content signals)
+$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ('_mdfa_cache_key', '_mdfa_html_tokens', '_mdfa_signal_ai_train', '_mdfa_signal_search', '_mdfa_signal_ai_input')" );
+
+// Usuń term meta (content signals)
+$wpdb->query( "DELETE FROM {$wpdb->termmeta} WHERE meta_key IN ('_mdfa_signal_ai_train', '_mdfa_signal_search', '_mdfa_signal_ai_input')" );
 
 // Usuń transienty cache
 $wpdb->query(
