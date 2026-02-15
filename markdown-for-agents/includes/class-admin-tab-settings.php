@@ -39,6 +39,12 @@ class MDFA_Admin_Tab_Settings {
 			'default'           => true,
 		] );
 
+		register_setting( 'mdfa_settings', 'mdfa_anonymize_ip', [
+			'type'              => 'boolean',
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'default'           => true,
+		] );
+
 		register_setting( 'mdfa_settings', 'mdfa_ai_bots', [
 			'type'              => 'array',
 			'sanitize_callback' => [ __CLASS__, 'sanitize_bot_list' ],
@@ -108,6 +114,14 @@ class MDFA_Admin_Tab_Settings {
 			'mdfa_canonical',
 			__( 'Nagłówek canonical', 'markdown-for-agents' ),
 			[ __CLASS__, 'render_canonical_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_field(
+			'mdfa_anonymize_ip',
+			__( 'Anonimizacja IP (GDPR)', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_anonymize_ip_field' ],
 			'markdown-for-agents',
 			'mdfa_general'
 		);
@@ -228,6 +242,15 @@ class MDFA_Admin_Tab_Settings {
 		echo '<p class="description">' . esc_html__( '0 = bez cache. Domyślnie: 3600 (1 godzina).', 'markdown-for-agents' ) . '</p>';
 	}
 
+	public static function render_anonymize_ip_field(): void {
+		$anonymize = get_option( 'mdfa_anonymize_ip', true );
+		printf(
+			'<input type="checkbox" name="mdfa_anonymize_ip" value="1" %s />',
+			checked( $anonymize, true, false )
+		);
+		echo '<p class="description">' . esc_html__( 'Obcinaj ostatni oktet IPv4 / ostatnie 80 bitów IPv6 przed zapisem do logów. Zalecane ze względu na GDPR.', 'markdown-for-agents' ) . '</p>';
+	}
+
 	public static function render_ai_bots_field(): void {
 		$bots = (array) get_option( 'mdfa_ai_bots', MDFA_Request_Log::DEFAULT_AI_BOTS );
 		printf(
@@ -257,6 +280,9 @@ class MDFA_Admin_Tab_Settings {
 
 	public static function handle_clear_cache(): void {
 		if ( ! isset( $_POST['mdfa_clear_cache'] ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 		check_admin_referer( 'mdfa_clear_cache' );

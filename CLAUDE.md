@@ -64,7 +64,7 @@ Four-layer content discovery system:
 
 **Auto-update:** `MDFA_Updater` checks Forgejo releases API (`repo.nimblio.work`) every 12h via WordPress Transients. Uses `site_transient_update_plugins` + `plugins_api` filters. `upgrader_source_selection` fixes folder structure from Forgejo archive ZIP.
 
-**Request logging:** Custom table `wp_mdfa_request_log` — logs every markdown request with post_id, term_id, taxonomy, request_method (accept_header/format_param), user_agent, ip_address, tokens, timestamp. DB schema versioned via `mdfa_db_version` option with automatic migration on `plugins_loaded`.
+**Request logging:** Custom table `wp_mdfa_request_log` — logs every markdown request with post_id, term_id, taxonomy, request_method (accept_header/format_param), user_agent, bot_name, bot_type, ip_address, tokens, timestamp. Bot identification happens at insert time (not at query time). DB schema versioned via `mdfa_db_version` option (current: 3) with automatic migration on `plugins_loaded`.
 
 ## Classes
 
@@ -74,9 +74,9 @@ Four-layer content discovery system:
 | MDFA_Content_Negotiation | `includes/class-content-negotiation.php` | Accept header + ?format=md routing (posts + archives) |
 | MDFA_Discovery | `includes/class-discovery.php` | `<link rel="alternate">` tag (posts + archives) |
 | MDFA_Token_Estimator | `includes/class-token-estimator.php` | Token count: `ceil(mb_strlen / 4)` |
-| MDFA_Request_Log | `includes/class-request-log.php` | Request logging + bot identification + stats queries |
+| MDFA_Request_Log | `includes/class-request-log.php` | Request logging + bot identification (at insert) + stats queries (SQL-based) |
 | MDFA_Request_Log_Table | `includes/class-request-log-table.php` | WP_List_Table with filtering, sorting, pagination |
-| MDFA_Stats_Tracker | `includes/class-stats-tracker.php` | HTML request counter + token estimation |
+| MDFA_Stats_Tracker | `includes/class-stats-tracker.php` | HTML request counter + token estimation (via post meta, not per-request rendering) |
 | MDFA_Updater | `includes/class-updater.php` | Auto-update from Forgejo releases API |
 | MDFA_Admin | `includes/class-admin.php` | Tabbed admin (settings, logs, stats) |
 

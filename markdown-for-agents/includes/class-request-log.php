@@ -56,13 +56,18 @@ class MDFA_Request_Log {
 			taxonomy varchar(32) DEFAULT NULL,
 			request_method varchar(20) NOT NULL DEFAULT 'accept_header',
 			user_agent varchar(512) NOT NULL DEFAULT '',
+			bot_name varchar(100) NOT NULL DEFAULT '',
+			bot_type varchar(20) NOT NULL DEFAULT '',
 			ip_address varchar(45) NOT NULL DEFAULT '',
 			tokens int unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			KEY post_id (post_id),
 			KEY created_at (created_at),
-			KEY idx_taxonomy_term (taxonomy, term_id)
+			KEY idx_taxonomy_term (taxonomy, term_id),
+			KEY idx_bot_name (bot_name),
+			KEY idx_bot_type (bot_type),
+			KEY idx_request_method (request_method)
 		) {$charset};";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -123,17 +128,47 @@ class MDFA_Request_Log {
 		];
 	}
 
+	private static function get_client_ip(): string {
+		$ip_raw = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '' );
+		$ip     = filter_var( $ip_raw, FILTER_VALIDATE_IP ) ? $ip_raw : '';
+
+		if ( $ip && get_option( 'mdfa_anonymize_ip', true ) ) {
+			$ip = self::anonymize_ip( $ip );
+		}
+
+		return $ip;
+	}
+
+	public static function anonymize_ip( string $ip ): string {
+		if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+			return preg_replace( '/\.\d+$/', '.0', $ip );
+		}
+
+		if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+			$packed = inet_pton( $ip );
+			// Zero last 80 bits (10 bytes)
+			for ( $i = 6; $i < 16; $i++ ) {
+				$packed[ $i ] = "\0";
+			}
+			return inet_ntop( $packed );
+		}
+
+		return $ip;
+	}
+
 	public static function get_filtered( array $args = [] ): object {
 		global $wpdb;
 
 		$defaults = [
-			'offset'     => 0,
-			'limit'      => 20,
-			'order_by'   => 'created_at',
-			'order'      => 'DESC',
-			'bot_filter' => '',
-			'search'     => '',
-			'post_id'    => 0,
+			'offset'          => 0,
+			'limit'           => 20,
+			'order_by'        => 'created_at',
+			'order'           => 'DESC',
+			'bot_filter'      => '',
+			'bot_name_filter' => '',
+			'method_filter'   => '',
+			'search'          => '',
+			'post_id'         => 0,
 		];
 
 		$args  = wp_parse_args( $args, $defaults );
@@ -149,6 +184,21 @@ class MDFA_Request_Log {
 		if ( ! empty( $args['post_id'] ) ) {
 			$where[] = 'l.post_id = %d';
 			$values[] = (int) $args['post_id'];
+		}
+
+		if ( ! empty( $args['bot_filter'] ) ) {
+			$where[] = 'l.bot_type = %s';
+			$values[] = $args['bot_filter'];
+		}
+
+		if ( ! empty( $args['bot_name_filter'] ) ) {
+			$where[] = 'l.bot_name = %s';
+			$values[] = $args['bot_name_filter'];
+		}
+
+		if ( ! empty( $args['method_filter'] ) ) {
+			$where[] = 'l.request_method = %s';
+			$values[] = $args['method_filter'];
 		}
 
 		$where_sql = implode( ' AND ', $where );
@@ -170,24 +220,6 @@ class MDFA_Request_Log {
 		$items = empty( $items_values ) || ( count( $items_values ) === 2 && empty( $values ) )
 			? $wpdb->get_results( $wpdb->prepare( $items_sql, $args['limit'], $args['offset'] ) )
 			: $wpdb->get_results( $wpdb->prepare( $items_sql, $items_values ) );
-
-		if ( ! empty( $args['bot_filter'] ) || ! empty( $args['bot_name_filter'] ) || ! empty( $args['method_filter'] ) ) {
-			$items = array_values( array_filter( $items, function ( $item ) use ( $args ) {
-				$bot = self::identify_bot( $item->user_agent );
-
-				if ( ! empty( $args['bot_filter'] ) && $bot['type'] !== $args['bot_filter'] ) {
-					return false;
-				}
-				if ( ! empty( $args['bot_name_filter'] ) && $bot['name'] !== $args['bot_name_filter'] ) {
-					return false;
-				}
-				if ( ! empty( $args['method_filter'] ) && $item->request_method !== $args['method_filter'] ) {
-					return false;
-				}
-
-				return true;
-			} ) );
-		}
 
 		return (object) [
 			'items' => $items,
@@ -214,32 +246,21 @@ class MDFA_Request_Log {
 		global $wpdb;
 
 		$table = self::get_table_name();
-		$rows  = $wpdb->get_col( "SELECT DISTINCT user_agent FROM {$table}" );
 
-		$names = [];
-		foreach ( $rows as $ua ) {
-			$bot = self::identify_bot( $ua );
-			$names[ $bot['name'] ] = true;
-		}
-
-		ksort( $names );
-		return array_keys( $names );
+		return $wpdb->get_col( "SELECT DISTINCT bot_name FROM {$table} WHERE bot_name != '' ORDER BY bot_name ASC" );
 	}
 
 	public static function get_bot_stats(): array {
 		global $wpdb;
 
 		$table = self::get_table_name();
-		$rows  = $wpdb->get_results( "SELECT user_agent, COUNT(*) as cnt FROM {$table} GROUP BY user_agent" );
+		$rows  = $wpdb->get_results( "SELECT bot_name, COUNT(*) as cnt FROM {$table} WHERE bot_name != '' GROUP BY bot_name ORDER BY cnt DESC" );
 
 		$stats = [];
 		foreach ( $rows as $row ) {
-			$bot  = self::identify_bot( $row->user_agent );
-			$name = $bot['name'];
-			$stats[ $name ] = ( $stats[ $name ] ?? 0 ) + (int) $row->cnt;
+			$stats[ $row->bot_name ] = (int) $row->cnt;
 		}
 
-		arsort( $stats );
 		return $stats;
 	}
 
@@ -302,16 +323,20 @@ class MDFA_Request_Log {
 	public static function log( int $post_id, int $tokens, ?int $term_id = null, ?string $taxonomy = null ): void {
 		global $wpdb;
 
-		$method = get_query_var( 'format' ) === 'md' ? 'format_param' : 'accept_header';
+		$method     = get_query_var( 'format' ) === 'md' ? 'format_param' : 'accept_header';
+		$user_agent = sanitize_text_field( mb_substr( $_SERVER['HTTP_USER_AGENT'] ?? '', 0, 512 ) );
+		$bot        = self::identify_bot( $user_agent );
 
 		$data = [
 			'post_id'        => $post_id,
 			'request_method' => $method,
-			'user_agent'     => mb_substr( $_SERVER['HTTP_USER_AGENT'] ?? '', 0, 512 ),
-			'ip_address'     => $_SERVER['REMOTE_ADDR'] ?? '',
+			'user_agent'     => $user_agent,
+			'bot_name'       => $bot['name'],
+			'bot_type'       => $bot['type'],
+			'ip_address'     => self::get_client_ip(),
 			'tokens'         => $tokens,
 		];
-		$format = [ '%d', '%s', '%s', '%s', '%d' ];
+		$format = [ '%d', '%s', '%s', '%s', '%s', '%s', '%d' ];
 
 		if ( $term_id !== null ) {
 			$data['term_id']  = $term_id;
@@ -325,20 +350,49 @@ class MDFA_Request_Log {
 
 	public static function maybe_migrate(): void {
 		$db_version = (int) get_option( 'mdfa_db_version', 1 );
-		if ( $db_version >= 2 ) {
+		if ( $db_version >= 3 ) {
 			return;
 		}
 
 		global $wpdb;
 		$table = self::get_table_name();
 
+		// Check if table exists first.
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return;
+		}
+
 		$columns = $wpdb->get_col( "SHOW COLUMNS FROM {$table}" );
+
+		// Migration v1 → v2: add term_id, taxonomy columns.
 		if ( ! in_array( 'term_id', $columns, true ) ) {
 			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN term_id bigint(20) unsigned DEFAULT NULL AFTER post_id" );
 			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN taxonomy varchar(32) DEFAULT NULL AFTER term_id" );
 			$wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_taxonomy_term (taxonomy, term_id)" );
 		}
 
-		update_option( 'mdfa_db_version', 2 );
+		// Migration v2 → v3: add bot_name, bot_type columns + indexes.
+		if ( ! in_array( 'bot_name', $columns, true ) ) {
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN bot_name varchar(100) NOT NULL DEFAULT '' AFTER user_agent" );
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN bot_type varchar(20) NOT NULL DEFAULT '' AFTER bot_name" );
+			$wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_bot_name (bot_name)" );
+			$wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_bot_type (bot_type)" );
+			$wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_request_method (request_method)" );
+
+			// Backfill bot_name/bot_type for existing rows.
+			$rows = $wpdb->get_results( "SELECT id, user_agent FROM {$table} WHERE bot_name = ''" );
+			foreach ( $rows as $row ) {
+				$bot = self::identify_bot( $row->user_agent );
+				$wpdb->update(
+					$table,
+					[ 'bot_name' => $bot['name'], 'bot_type' => $bot['type'] ],
+					[ 'id' => $row->id ],
+					[ '%s', '%s' ],
+					[ '%d' ]
+				);
+			}
+		}
+
+		update_option( 'mdfa_db_version', 3 );
 	}
 }

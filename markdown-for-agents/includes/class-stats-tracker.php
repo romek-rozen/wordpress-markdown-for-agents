@@ -2,9 +2,37 @@
 
 class MDFA_Stats_Tracker {
 
+	private static array $pending = [
+		'html_requests'         => 0,
+		'html_tokens_estimated' => 0,
+		'html_archive_requests' => 0,
+	];
+
 	public static function init(): void {
 		add_action( 'template_redirect', [ __CLASS__, 'track_html_request' ], 99 );
 		add_action( 'template_redirect', [ __CLASS__, 'track_html_archive_request' ], 99 );
+		add_action( 'save_post', [ __CLASS__, 'estimate_tokens_on_save' ], 20 );
+		add_action( 'shutdown', [ __CLASS__, 'flush_stats' ] );
+	}
+
+	public static function estimate_tokens_on_save( int $post_id ): void {
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post || $post->post_status !== 'publish' ) {
+			return;
+		}
+
+		$enabled_types = (array) get_option( 'mdfa_post_types', [ 'post', 'page' ] );
+		if ( ! in_array( $post->post_type, $enabled_types, true ) ) {
+			return;
+		}
+
+		$html   = apply_filters( 'the_content', $post->post_content );
+		$tokens = MDFA_Token_Estimator::estimate( $html );
+		update_post_meta( $post_id, '_mdfa_html_tokens', $tokens );
 	}
 
 	public static function track_html_request(): void {
@@ -31,30 +59,23 @@ class MDFA_Stats_Tracker {
 			return;
 		}
 
-		$cache_key = 'mdfa_html_tokens_' . $post->ID . '_' . md5( $post->post_modified );
-		$tokens    = get_transient( $cache_key );
+		$tokens = (int) get_post_meta( $post->ID, '_mdfa_html_tokens', true );
+		if ( $tokens === 0 ) {
+			$cache_key = 'mdfa_html_tokens_' . $post->ID . '_' . md5( $post->post_modified );
+			$tokens    = get_transient( $cache_key );
 
-		if ( $tokens === false ) {
-			$html   = apply_filters( 'the_content', $post->post_content );
-			$tokens = MDFA_Token_Estimator::estimate( $html );
-			$ttl    = (int) get_option( 'mdfa_cache_ttl', 3600 );
-			set_transient( $cache_key, $tokens, $ttl ?: 3600 );
+			if ( $tokens === false ) {
+				$html   = apply_filters( 'the_content', $post->post_content );
+				$tokens = MDFA_Token_Estimator::estimate( $html );
+				$ttl    = (int) get_option( 'mdfa_cache_ttl', 3600 );
+				set_transient( $cache_key, $tokens, $ttl ?: 3600 );
+			}
+
+			update_post_meta( $post->ID, '_mdfa_html_tokens', (int) $tokens );
 		}
 
-		$stats = get_option( 'mdfa_stats', [
-			'html_requests'         => 0,
-			'html_tokens_estimated' => 0,
-			'started_at'            => current_time( 'mysql' ),
-		] );
-
-		$stats['html_requests']++;
-		$stats['html_tokens_estimated'] += (int) $tokens;
-
-		if ( empty( $stats['started_at'] ) ) {
-			$stats['started_at'] = current_time( 'mysql' );
-		}
-
-		update_option( 'mdfa_stats', $stats, false );
+		self::$pending['html_requests']++;
+		self::$pending['html_tokens_estimated'] += (int) $tokens;
 	}
 
 	public static function track_html_archive_request(): void {
@@ -81,13 +102,23 @@ class MDFA_Stats_Tracker {
 			return;
 		}
 
+		self::$pending['html_archive_requests']++;
+	}
+
+	public static function flush_stats(): void {
+		if ( self::$pending['html_requests'] === 0 && self::$pending['html_archive_requests'] === 0 ) {
+			return;
+		}
+
 		$stats = get_option( 'mdfa_stats', [
 			'html_requests'         => 0,
 			'html_tokens_estimated' => 0,
 			'started_at'            => current_time( 'mysql' ),
 		] );
 
-		$stats['html_archive_requests'] = ( $stats['html_archive_requests'] ?? 0 ) + 1;
+		$stats['html_requests']         += self::$pending['html_requests'];
+		$stats['html_tokens_estimated'] += self::$pending['html_tokens_estimated'];
+		$stats['html_archive_requests']  = ( $stats['html_archive_requests'] ?? 0 ) + self::$pending['html_archive_requests'];
 
 		if ( empty( $stats['started_at'] ) ) {
 			$stats['started_at'] = current_time( 'mysql' );

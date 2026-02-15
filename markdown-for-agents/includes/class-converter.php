@@ -307,16 +307,23 @@ class MDFA_Converter {
 	}
 
 	private static function get_archive_cache_key( \WP_Term $term, int $page ): string {
-		global $wpdb;
+		$taxonomy_safe = sanitize_key( $term->taxonomy );
+		$term_id       = (int) $term->term_id;
+		$modified_key  = "mdfa_archive_modified_{$term_id}_{$taxonomy_safe}";
 
-		$latest_modified = $wpdb->get_var( $wpdb->prepare(
-			"SELECT MAX(p.post_modified) FROM {$wpdb->posts} p
-			INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-			WHERE tr.term_taxonomy_id = %d AND p.post_status = 'publish'",
-			$term->term_taxonomy_id
-		) );
+		$latest_modified = get_transient( $modified_key );
+		if ( $latest_modified === false ) {
+			global $wpdb;
+			$latest_modified = (string) $wpdb->get_var( $wpdb->prepare(
+				"SELECT MAX(p.post_modified) FROM {$wpdb->posts} p
+				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+				WHERE tr.term_taxonomy_id = %d AND p.post_status = 'publish'",
+				$term->term_taxonomy_id
+			) );
+			set_transient( $modified_key, $latest_modified, 300 );
+		}
 
-		return 'mdfa_archive_' . $term->taxonomy . '_' . $term->term_id . '_' . $page . '_' . md5( $latest_modified ?? '' );
+		return "mdfa_archive_{$taxonomy_safe}_{$term_id}_{$page}_" . md5( $latest_modified );
 	}
 
 	private static function invalidate_archive_cache( int $post_id ): void {
@@ -330,16 +337,19 @@ class MDFA_Converter {
 		$taxonomies = get_object_taxonomies( $post->post_type );
 		foreach ( $taxonomies as $taxonomy ) {
 			$terms = wp_get_post_terms( $post_id, $taxonomy, [ 'fields' => 'ids' ] );
-			if ( is_wp_error( $terms ) ) {
+			if ( is_wp_error( $terms ) || empty( $terms ) ) {
 				continue;
 			}
+			$taxonomy_safe = sanitize_key( $taxonomy );
 			foreach ( $terms as $term_id ) {
-				$pattern = $wpdb->esc_like( "mdfa_archive_{$taxonomy}_{$term_id}_" ) . '%';
+				$term_id_int = (int) $term_id;
+				$pattern     = $wpdb->esc_like( "mdfa_archive_{$taxonomy_safe}_{$term_id_int}_" ) . '%';
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
 					'_transient_' . $pattern,
 					'_transient_timeout_' . $pattern
 				) );
+				delete_transient( "mdfa_archive_modified_{$term_id_int}_{$taxonomy_safe}" );
 			}
 		}
 	}

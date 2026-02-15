@@ -167,8 +167,7 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 	}
 
 	public function column_bot_name( $item ): string {
-		$bot = MDFA_Request_Log::identify_bot( $item->user_agent );
-		return esc_html( $bot['name'] );
+		return esc_html( $item->bot_name ?: MDFA_Request_Log::identify_bot( $item->user_agent )['name'] );
 	}
 
 	public function column_user_agent( $item ): string {
