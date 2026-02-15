@@ -57,11 +57,24 @@ class MDFA_Converter {
 		$author  = get_userdata( $post->post_author );
 		$excerpt = $post->post_excerpt ?: wp_trim_words( $post->post_content, 55, '' );
 
-		$categories    = get_the_category( $post->ID );
-		$category_names = array_map( fn( $cat ) => $cat->name, $categories );
+		$taxonomies     = get_object_taxonomies( $post->post_type, 'objects' );
+		$category_names = [];
+		$tag_names      = [];
 
-		$tags      = get_the_tags( $post->ID );
-		$tag_names = $tags ? array_map( fn( $tag ) => $tag->name, $tags ) : [];
+		foreach ( $taxonomies as $taxonomy ) {
+			if ( ! $taxonomy->public ) {
+				continue;
+			}
+			$terms = wp_get_post_terms( $post->ID, $taxonomy->name, [ 'fields' => 'names' ] );
+			if ( is_wp_error( $terms ) || empty( $terms ) ) {
+				continue;
+			}
+			if ( $taxonomy->hierarchical ) {
+				$category_names = array_merge( $category_names, $terms );
+			} else {
+				$tag_names = array_merge( $tag_names, $terms );
+			}
+		}
 
 		$lines   = [];
 		$lines[] = '---';
