@@ -12,14 +12,24 @@ delete_option( 'mdfa_cache_ttl' );
 delete_option( 'mdfa_db_version' );
 delete_option( 'mdfa_stats' );
 delete_option( 'mdfa_beta_updates' );
+delete_option( 'mdfa_noindex' );
+delete_option( 'mdfa_canonical' );
+delete_option( 'mdfa_anonymize_ip' );
+delete_option( 'mdfa_ai_bots' );
+delete_option( 'mdfa_search_crawlers' );
+delete_option( 'mdfa_tool_crawlers' );
+delete_option( 'mdfa_max_log_rows' );
+delete_option( 'mdfa_signal_ai_train' );
+delete_option( 'mdfa_signal_search' );
+delete_option( 'mdfa_signal_ai_input' );
 delete_transient( 'mdfa_update_check' );
 delete_transient( 'mdfa_update_check_beta' );
 
 // Usuń tabelę logów
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mdfa_request_log" );
 
-// Usuń post meta (klucze cache)
-$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_mdfa_cache_key'" );
+// Usuń post meta (klucze cache + HTML tokens)
+$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ('_mdfa_cache_key', '_mdfa_html_tokens')" );
 
 // Usuń transienty cache
 $wpdb->query(

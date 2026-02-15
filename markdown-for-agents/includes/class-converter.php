@@ -121,7 +121,11 @@ class MDFA_Converter {
 	}
 
 	private static function escape_yaml( string $value ): string {
-		return str_replace( '"', '\\"', $value );
+		return str_replace(
+			[ '\\', '"', "\n", "\r", "\t", "\0" ],
+			[ '\\\\', '\\"', '\\n', '\\r', '\\t', '' ],
+			$value
+		);
 	}
 
 	public static function invalidate_cache( int $post_id ): void {

@@ -4,6 +4,14 @@ Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
 ## [1.0.4] — 2026-02-15
 
+### Poprawione (bezpieczeństwo)
+- K1: Posty chronione hasłem nie są serwowane jako Markdown (bypass ochrony hasłem)
+- W1: `escape_yaml()` obsługuje backslash, newline, carriage return, tab i null byte (YAML injection)
+- W2: Auto-rotacja logów — konfigurowalne `mdfa_max_log_rows` (domyślnie 50 000)
+- W3: Konfigurowalne nagłówki Content-Signal (3 checkboxy: ai-train, search, ai-input)
+- S3: Kompletne czyszczenie opcji i post meta w `uninstall.php`
+- S4: `sanitize_text_field` w sanityzacji list botów
+
 ### Dodane
 - Opt-in na aktualizacje beta/pre-release (checkbox w ustawieniach, domyślnie wyłączony)
 - Oznaczenie "(beta)" przy wersji pre-release w panelu aktualizacji WP

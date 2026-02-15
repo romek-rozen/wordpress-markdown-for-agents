@@ -51,6 +51,30 @@ class MDFA_Admin_Tab_Settings {
 			'default'           => false,
 		] );
 
+		register_setting( 'mdfa_settings', 'mdfa_max_log_rows', [
+			'type'              => 'integer',
+			'sanitize_callback' => 'intval',
+			'default'           => 50000,
+		] );
+
+		register_setting( 'mdfa_settings', 'mdfa_signal_ai_train', [
+			'type'              => 'boolean',
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'default'           => true,
+		] );
+
+		register_setting( 'mdfa_settings', 'mdfa_signal_search', [
+			'type'              => 'boolean',
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'default'           => true,
+		] );
+
+		register_setting( 'mdfa_settings', 'mdfa_signal_ai_input', [
+			'type'              => 'boolean',
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'default'           => true,
+		] );
+
 		register_setting( 'mdfa_settings', 'mdfa_ai_bots', [
 			'type'              => 'array',
 			'sanitize_callback' => [ __CLASS__, 'sanitize_bot_list' ],
@@ -141,6 +165,45 @@ class MDFA_Admin_Tab_Settings {
 		);
 
 		add_settings_field(
+			'mdfa_max_log_rows',
+			__( 'Limit logów', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_max_log_rows_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_section(
+			'mdfa_content_signals',
+			__( 'Content Signals', 'markdown-for-agents' ),
+			null,
+			'markdown-for-agents'
+		);
+
+		add_settings_field(
+			'mdfa_signal_ai_train',
+			__( 'ai-train', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_signal_ai_train_field' ],
+			'markdown-for-agents',
+			'mdfa_content_signals'
+		);
+
+		add_settings_field(
+			'mdfa_signal_search',
+			__( 'search', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_signal_search_field' ],
+			'markdown-for-agents',
+			'mdfa_content_signals'
+		);
+
+		add_settings_field(
+			'mdfa_signal_ai_input',
+			__( 'ai-input', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_signal_ai_input_field' ],
+			'markdown-for-agents',
+			'mdfa_content_signals'
+		);
+
+		add_settings_field(
 			'mdfa_ai_bots',
 			__( 'Boty AI', 'markdown-for-agents' ),
 			[ __CLASS__, 'render_ai_bots_field' ],
@@ -188,6 +251,7 @@ class MDFA_Admin_Tab_Settings {
 		$lines = explode( "\n", (string) $value );
 		$lines = array_map( 'trim', $lines );
 		$lines = array_filter( $lines, fn( $l ) => $l !== '' );
+		$lines = array_map( 'sanitize_text_field', $lines );
 		return array_values( array_unique( $lines ) );
 	}
 
@@ -299,6 +363,42 @@ class MDFA_Admin_Tab_Settings {
 			esc_textarea( implode( "\n", $crawlers ) )
 		);
 		echo '<p class="description">' . esc_html__( 'Crawlery narzędzi zewnętrznych (Ahrefs, Semrush, social media, etc.). Jedna nazwa na linię.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_max_log_rows_field(): void {
+		$max = (int) get_option( 'mdfa_max_log_rows', 50000 );
+		printf(
+			'<input type="number" name="mdfa_max_log_rows" value="%d" min="0" step="1000" class="small-text" />',
+			$max
+		);
+		echo '<p class="description">' . esc_html__( 'Maksymalna liczba wpisów w logach. Najstarsze wpisy są automatycznie usuwane. 0 = bez limitu.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_signal_ai_train_field(): void {
+		$val = get_option( 'mdfa_signal_ai_train', true );
+		printf(
+			'<input type="checkbox" name="mdfa_signal_ai_train" value="1" %s />',
+			checked( $val, true, false )
+		);
+		echo '<p class="description">' . esc_html__( 'Zezwalaj na trenowanie modeli AI na tej treści.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_signal_search_field(): void {
+		$val = get_option( 'mdfa_signal_search', true );
+		printf(
+			'<input type="checkbox" name="mdfa_signal_search" value="1" %s />',
+			checked( $val, true, false )
+		);
+		echo '<p class="description">' . esc_html__( 'Zezwalaj na użycie w wynikach wyszukiwania.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_signal_ai_input_field(): void {
+		$val = get_option( 'mdfa_signal_ai_input', true );
+		printf(
+			'<input type="checkbox" name="mdfa_signal_ai_input" value="1" %s />',
+			checked( $val, true, false )
+		);
+		echo '<p class="description">' . esc_html__( 'Zezwalaj na użycie jako kontekst wejściowy AI (np. RAG, podsumowania).', 'markdown-for-agents' ) . '</p>';
 	}
 
 	public static function handle_clear_cache(): void {

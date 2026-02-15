@@ -46,6 +46,10 @@ class MDFA_Content_Negotiation {
 	}
 
 	private static function handle_singular_request( WP_Post $post ): void {
+		if ( post_password_required( $post ) ) {
+			return;
+		}
+
 		$enabled_types = (array) get_option( 'mdfa_post_types', [ 'post', 'page' ] );
 		if ( ! in_array( $post->post_type, $enabled_types, true ) ) {
 			return;
@@ -88,7 +92,19 @@ class MDFA_Content_Negotiation {
 		header( 'Content-Type: text/markdown; charset=utf-8' );
 		header( 'Vary: Accept' );
 		header( 'X-Markdown-Tokens: ' . $tokens );
-		header( 'Content-Signal: ai-train=yes, search=yes, ai-input=yes' );
+		$signals = [];
+		if ( get_option( 'mdfa_signal_ai_train', true ) ) {
+			$signals[] = 'ai-train=yes';
+		}
+		if ( get_option( 'mdfa_signal_search', true ) ) {
+			$signals[] = 'search=yes';
+		}
+		if ( get_option( 'mdfa_signal_ai_input', true ) ) {
+			$signals[] = 'ai-input=yes';
+		}
+		if ( ! empty( $signals ) ) {
+			header( 'Content-Signal: ' . implode( ', ', $signals ) );
+		}
 		if ( get_option( 'mdfa_noindex', true ) ) {
 			header( 'X-Robots-Tag: noindex' );
 		}

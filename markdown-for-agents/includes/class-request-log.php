@@ -346,6 +346,39 @@ class MDFA_Request_Log {
 		}
 
 		$wpdb->insert( self::get_table_name(), $data, $format );
+
+		self::maybe_trim_logs();
+	}
+
+	private static function maybe_trim_logs(): void {
+		static $counter = null;
+
+		if ( $counter === null ) {
+			$counter = wp_rand( 0, 99 );
+		} else {
+			$counter++;
+		}
+
+		if ( $counter % 100 !== 0 ) {
+			return;
+		}
+
+		$max_rows = (int) get_option( 'mdfa_max_log_rows', 50000 );
+		if ( $max_rows <= 0 ) {
+			return;
+		}
+
+		global $wpdb;
+		$table = self::get_table_name();
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+
+		if ( $count > $max_rows ) {
+			$delete_count = $count - $max_rows;
+			$wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$table} ORDER BY created_at ASC LIMIT %d",
+				$delete_count
+			) );
+		}
 	}
 
 	public static function maybe_migrate(): void {
