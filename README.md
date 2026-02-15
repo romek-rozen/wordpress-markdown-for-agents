@@ -7,8 +7,9 @@ WordPress plugin implementing the [Markdown for Agents](https://blog.cloudflare.
 - **Content negotiation** — responds with Markdown when `Accept: text/markdown` header is present
 - **Static endpoint** — `?format=md` URL parameter for any post/page
 - **Discovery tag** — `<link rel="alternate" type="text/markdown">` in `<head>`
+- **Taxonomy archives** — category, tag and custom taxonomy pages served as Markdown (post list with frontmatter, pagination, subcategories)
 - **YAML frontmatter** — title, author, date, categories, tags, URL
-- **WooCommerce support** — products get `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` in frontmatter
+- **WooCommerce support** — products get `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` in frontmatter; product category archives include price/SKU per item
 - **HTTP headers** — `Content-Type`, `Vary`, `X-Markdown-Tokens`, `Content-Signal` per spec
 - **Token estimation** — approximate token count in response header
 - **Request logging** — tracks all markdown requests with bot identification, filtering, sorting, pagination
@@ -55,6 +56,7 @@ Enable the `product` post type in settings. Product frontmatter includes add-to-
 |--------|---------|-------------|
 | Enable plugin | On | Master switch |
 | Post types | Posts, Pages | Which post types serve Markdown |
+| Taxonomies | Categories, Tags | Which taxonomy archives serve Markdown |
 | Cache TTL | 3600s | How long converted Markdown is cached |
 
 ## How it works
@@ -76,7 +78,6 @@ Enable the `product` post type in settings. Product frontmatter includes add-to-
 
 ## Planned features
 
-- Taxonomy archive support — serve category, tag and custom taxonomy pages as Markdown (post list with frontmatter)
 - Pretty URLs via rewrite rules (`/slug/index.md`)
 - Page builder compatibility
 

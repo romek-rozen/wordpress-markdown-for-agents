@@ -52,6 +52,8 @@ class MDFA_Request_Log {
 		$sql = "CREATE TABLE {$table} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			post_id bigint(20) unsigned NOT NULL,
+			term_id bigint(20) unsigned DEFAULT NULL,
+			taxonomy varchar(32) DEFAULT NULL,
 			request_method varchar(20) NOT NULL DEFAULT 'accept_header',
 			user_agent varchar(512) NOT NULL DEFAULT '',
 			ip_address varchar(45) NOT NULL DEFAULT '',
@@ -59,7 +61,8 @@ class MDFA_Request_Log {
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			KEY post_id (post_id),
-			KEY created_at (created_at)
+			KEY created_at (created_at),
+			KEY idx_taxonomy_term (taxonomy, term_id)
 		) {$charset};";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -275,21 +278,46 @@ class MDFA_Request_Log {
 		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM " . self::get_table_name() );
 	}
 
-	public static function log( int $post_id, int $tokens ): void {
+	public static function log( int $post_id, int $tokens, ?int $term_id = null, ?string $taxonomy = null ): void {
 		global $wpdb;
 
 		$method = get_query_var( 'format' ) === 'md' ? 'format_param' : 'accept_header';
 
-		$wpdb->insert(
-			self::get_table_name(),
-			[
-				'post_id'        => $post_id,
-				'request_method' => $method,
-				'user_agent'     => mb_substr( $_SERVER['HTTP_USER_AGENT'] ?? '', 0, 512 ),
-				'ip_address'     => $_SERVER['REMOTE_ADDR'] ?? '',
-				'tokens'         => $tokens,
-			],
-			[ '%d', '%s', '%s', '%s', '%d' ]
-		);
+		$data = [
+			'post_id'        => $post_id,
+			'request_method' => $method,
+			'user_agent'     => mb_substr( $_SERVER['HTTP_USER_AGENT'] ?? '', 0, 512 ),
+			'ip_address'     => $_SERVER['REMOTE_ADDR'] ?? '',
+			'tokens'         => $tokens,
+		];
+		$format = [ '%d', '%s', '%s', '%s', '%d' ];
+
+		if ( $term_id !== null ) {
+			$data['term_id']  = $term_id;
+			$data['taxonomy'] = $taxonomy;
+			$format[]         = '%d';
+			$format[]         = '%s';
+		}
+
+		$wpdb->insert( self::get_table_name(), $data, $format );
+	}
+
+	public static function maybe_migrate(): void {
+		$db_version = (int) get_option( 'mdfa_db_version', 1 );
+		if ( $db_version >= 2 ) {
+			return;
+		}
+
+		global $wpdb;
+		$table = self::get_table_name();
+
+		$columns = $wpdb->get_col( "SHOW COLUMNS FROM {$table}" );
+		if ( ! in_array( 'term_id', $columns, true ) ) {
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN term_id bigint(20) unsigned DEFAULT NULL AFTER post_id" );
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN taxonomy varchar(32) DEFAULT NULL AFTER term_id" );
+			$wpdb->query( "ALTER TABLE {$table} ADD INDEX idx_taxonomy_term (taxonomy, term_id)" );
+		}
+
+		update_option( 'mdfa_db_version', 2 );
 	}
 }

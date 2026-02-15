@@ -30,12 +30,14 @@
 | `mdfa_enabled` | `true` | Master switch |
 | `mdfa_post_types` | `['post', 'page']` | Enabled post types |
 | `mdfa_cache_ttl` | `3600` | Cache TTL in seconds |
-| `mdfa_stats` | `[]` | HTML request counters (html_requests, html_tokens_estimated, started_at) |
+| `mdfa_taxonomies` | `['category', 'post_tag']` | Enabled taxonomies for archive Markdown |
+| `mdfa_db_version` | `2` | DB schema version for migrations |
+| `mdfa_stats` | `[]` | HTML request counters (html_requests, html_tokens_estimated, html_archive_requests, started_at) |
 
 ## Custom DB Table
 
-`wp_mdfa_request_log` — created on plugin activation via `dbDelta()`. Columns: id, post_id, request_method, user_agent, ip_address, tokens, created_at.
+`wp_mdfa_request_log` — created on plugin activation via `dbDelta()`. Columns: id, post_id, term_id, taxonomy, request_method, user_agent, ip_address, tokens, created_at. Schema versioned via `mdfa_db_version` with auto-migration on `plugins_loaded`.
 
 ## Uninstall
 
-`uninstall.php` cleans up: deletes options (incl. `mdfa_stats`), drops `wp_mdfa_request_log` table, removes `_mdfa_cache_key` post meta, removes `mdfa_md_*` and `mdfa_html_tokens_*` transients.
+`uninstall.php` cleans up: deletes options (incl. `mdfa_taxonomies`, `mdfa_db_version`, `mdfa_stats`), drops `wp_mdfa_request_log` table, removes `_mdfa_cache_key` post meta, removes `mdfa_md_*`, `mdfa_html_tokens_*` and `mdfa_archive_*` transients.

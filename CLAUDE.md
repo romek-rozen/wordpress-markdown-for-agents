@@ -32,7 +32,10 @@ wp-markdown-for-agents/                  # repo root
         ├── class-request-log-table.php  # WP_List_Table for logs (filtering, sorting, pagination)
         ├── class-stats-tracker.php      # HTML request counter + token estimation
         ├── class-updater.php           # auto-update from Forgejo repository
-        └── class-admin.php              # wp-admin settings (tabs: settings, logs, stats)
+        ├── class-admin.php              # wp-admin dispatcher (tabs, menu, Screen Options)
+        ├── class-admin-tab-settings.php # settings tab (register_settings, field renderers)
+        ├── class-admin-tab-logs.php     # logs tab (render + clear handler)
+        └── class-admin-tab-stats.php    # stats tab (render + reset handler)
 ```
 
 ## Dependencies
@@ -44,11 +47,13 @@ Composer with `league/html-to-markdown ^5.1`. Run `composer install --no-dev` in
 Four-layer content discovery system:
 
 1. **Vary header** (`send_headers`) — `Vary: Accept` on HTML responses for enabled post types (enables HEAD-based discovery)
-2. **Discovery tag** (`wp_head`) — `<link rel="alternate" type="text/markdown">` on singular views
-3. **Static endpoint** (`template_redirect`) — `?format=md` URL parameter
-4. **Content negotiation** (`template_redirect`, priority 5) — transparent `Accept: text/markdown` handling
+2. **Discovery tag** (`wp_head`) — `<link rel="alternate" type="text/markdown">` on singular views and taxonomy archives
+3. **Static endpoint** (`template_redirect`) — `?format=md` URL parameter (posts and taxonomy archives)
+4. **Content negotiation** (`template_redirect`, priority 5) — transparent `Accept: text/markdown` handling (posts and taxonomy archives)
 
-**Conversion pipeline:** `post_content` → `apply_filters('the_content')` (render Gutenberg blocks) → `league/html-to-markdown` → prepend YAML frontmatter → serve with proper headers.
+**Conversion pipeline (single posts):** `post_content` → `apply_filters('the_content')` (render Gutenberg blocks) → `league/html-to-markdown` → prepend YAML frontmatter → serve with proper headers.
+
+**Taxonomy archives:** `WP_Term` → YAML frontmatter (type, taxonomy, name, description, url, post_count, page, total_pages) → post list (title + link + date/price + excerpt) → subcategories section (hierarchical only) → pagination links. WooCommerce product taxonomies include price/SKU per item. Cache key: `mdfa_archive_{taxonomy}_{term_id}_{page}_{modified_hash}`.
 
 **WooCommerce support:** Converter uses universal taxonomy retrieval (`get_object_taxonomies()`) for any post type. For `product` post type, frontmatter includes `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` via WooCommerce API (guarded by `function_exists('wc_get_product')`).
 
@@ -58,15 +63,15 @@ Four-layer content discovery system:
 
 **Auto-update:** `MDFA_Updater` checks Forgejo releases API (`repo.nimblio.work`) every 12h via WordPress Transients. Uses `site_transient_update_plugins` + `plugins_api` filters. `upgrader_source_selection` fixes folder structure from Forgejo archive ZIP.
 
-**Request logging:** Custom table `wp_mdfa_request_log` — logs every markdown request with post_id, request_method (accept_header/format_param), user_agent, ip_address, tokens, timestamp.
+**Request logging:** Custom table `wp_mdfa_request_log` — logs every markdown request with post_id, term_id, taxonomy, request_method (accept_header/format_param), user_agent, ip_address, tokens, timestamp. DB schema versioned via `mdfa_db_version` option with automatic migration on `plugins_loaded`.
 
 ## Classes
 
 | Class | File | Responsibility |
 |-------|------|---------------|
-| MDFA_Converter | `includes/class-converter.php` | HTML→Markdown + frontmatter + cache + WooCommerce product data |
-| MDFA_Content_Negotiation | `includes/class-content-negotiation.php` | Accept header + ?format=md routing |
-| MDFA_Discovery | `includes/class-discovery.php` | `<link rel="alternate">` tag |
+| MDFA_Converter | `includes/class-converter.php` | HTML→Markdown + frontmatter + cache + WooCommerce product data + taxonomy archives |
+| MDFA_Content_Negotiation | `includes/class-content-negotiation.php` | Accept header + ?format=md routing (posts + archives) |
+| MDFA_Discovery | `includes/class-discovery.php` | `<link rel="alternate">` tag (posts + archives) |
 | MDFA_Token_Estimator | `includes/class-token-estimator.php` | Token count: `ceil(mb_strlen / 4)` |
 | MDFA_Request_Log | `includes/class-request-log.php` | Request logging + bot identification + stats queries |
 | MDFA_Request_Log_Table | `includes/class-request-log-table.php` | WP_List_Table with filtering, sorting, pagination |
@@ -111,6 +116,15 @@ curl -sI -H 'Accept: text/markdown' 'http://localhost:8080/?p=1'
 
 # Check request log
 docker compose exec db mysql -uroot -proot wordpress -e "SELECT * FROM wp_mdfa_request_log"
+
+# Taxonomy archive — discovery tag
+curl -s 'http://localhost:8080/category/uncategorized/' | grep 'rel="alternate".*text/markdown'
+
+# Taxonomy archive — static endpoint
+curl -s 'http://localhost:8080/category/uncategorized/?format=md'
+
+# Taxonomy archive — content negotiation
+curl -s -H 'Accept: text/markdown' 'http://localhost:8080/category/uncategorized/'
 ```
 
 ## Sprint Status
@@ -120,4 +134,5 @@ docker compose exec db mysql -uroot -proot wordpress -e "SELECT * FROM wp_mdfa_r
 - **Sprint 2.5** — DONE: tabbed admin (settings/logs/stats), WP_List_Table with bot identification + filtering + pagination, HTML vs Markdown stats comparison, bot distribution chart, top posts, token stats, X-Robots-Tag: noindex
 - **Sprint 2.6** — DONE: WooCommerce compatibility (universal taxonomy retrieval, product frontmatter with add_to_cart_url/price/currency/sku/in_stock)
 - **Sprint 2.7** — DONE: Auto-update from Forgejo repository (releases API, folder fix for archive ZIP)
-- **Sprint 3** — TODO: taxonomy archive support (categories, tags, custom taxonomies — see `taxonomy_plan.md`), rewrite rules (`/slug/index.md`), page builder compatibility
+- **Sprint 3** — DONE: Taxonomy archive support (categories, tags, WooCommerce product_cat/product_tag, custom taxonomies). Archive frontmatter + post list + subcategories + pagination. DB migration for term_id/taxonomy in request log. Settings UI for enabled taxonomies.
+- **Sprint 4** — TODO: rewrite rules (`/slug/index.md`), page builder compatibility

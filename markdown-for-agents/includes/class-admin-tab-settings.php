@@ -15,6 +15,12 @@ class MDFA_Admin_Tab_Settings {
 			'default'           => [ 'post', 'page' ],
 		] );
 
+		register_setting( 'mdfa_settings', 'mdfa_taxonomies', [
+			'type'              => 'array',
+			'sanitize_callback' => [ __CLASS__, 'sanitize_taxonomies' ],
+			'default'           => [ 'category', 'post_tag' ],
+		] );
+
 		register_setting( 'mdfa_settings', 'mdfa_cache_ttl', [
 			'type'              => 'integer',
 			'sanitize_callback' => 'absint',
@@ -69,6 +75,14 @@ class MDFA_Admin_Tab_Settings {
 		);
 
 		add_settings_field(
+			'mdfa_taxonomies',
+			__( 'Taksonomie (archiwa)', 'markdown-for-agents' ),
+			[ __CLASS__, 'render_taxonomies_field' ],
+			'markdown-for-agents',
+			'mdfa_general'
+		);
+
+		add_settings_field(
 			'mdfa_cache_ttl',
 			__( 'Cache TTL (sekundy)', 'markdown-for-agents' ),
 			[ __CLASS__, 'render_cache_ttl_field' ],
@@ -117,6 +131,14 @@ class MDFA_Admin_Tab_Settings {
 		return array_values( array_intersect( $value, $public_types ) );
 	}
 
+	public static function sanitize_taxonomies( mixed $value ): array {
+		if ( ! is_array( $value ) ) {
+			return [ 'category', 'post_tag' ];
+		}
+		$public_taxonomies = get_taxonomies( [ 'public' => true ] );
+		return array_values( array_intersect( $value, $public_taxonomies ) );
+	}
+
 	public static function sanitize_bot_list( mixed $value ): array {
 		if ( is_array( $value ) ) {
 			$value = implode( "\n", $value );
@@ -148,6 +170,21 @@ class MDFA_Admin_Tab_Settings {
 			);
 		}
 		echo '<p class="description">' . esc_html__( 'Zaznacz typy postów, dla których ma być dostępny endpoint markdown.', 'markdown-for-agents' ) . '</p>';
+	}
+
+	public static function render_taxonomies_field(): void {
+		$selected   = (array) get_option( 'mdfa_taxonomies', [ 'category', 'post_tag' ] );
+		$taxonomies = get_taxonomies( [ 'public' => true ], 'objects' );
+
+		foreach ( $taxonomies as $taxonomy ) {
+			printf(
+				'<label style="display:block;margin-bottom:4px;"><input type="checkbox" name="mdfa_taxonomies[]" value="%s" %s /> %s</label>',
+				esc_attr( $taxonomy->name ),
+				checked( in_array( $taxonomy->name, $selected, true ), true, false ),
+				esc_html( $taxonomy->labels->name )
+			);
+		}
+		echo '<p class="description">' . esc_html__( 'Zaznacz taksonomie, których archiwa mają być dostępne jako Markdown.', 'markdown-for-agents' ) . '</p>';
 	}
 
 	public static function render_noindex_field(): void {
@@ -195,7 +232,34 @@ class MDFA_Admin_Tab_Settings {
 		echo '<p class="description">' . esc_html__( 'Crawlery narzędzi zewnętrznych (Ahrefs, Semrush, social media, etc.). Jedna nazwa na linię.', 'markdown-for-agents' ) . '</p>';
 	}
 
+	public static function handle_clear_cache(): void {
+		if ( ! isset( $_POST['mdfa_clear_cache'] ) ) {
+			return;
+		}
+		check_admin_referer( 'mdfa_clear_cache' );
+
+		global $wpdb;
+		$deleted = (int) $wpdb->query(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_mdfa_md_%' OR option_name LIKE '_transient_timeout_mdfa_md_%' OR option_name LIKE '_transient_mdfa_archive_%' OR option_name LIKE '_transient_timeout_mdfa_archive_%'"
+		);
+		$wpdb->query(
+			"DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_mdfa_cache_key'"
+		);
+
+		$count = (int) ( $deleted / 2 ); // each transient has value + timeout row
+		add_settings_error(
+			'mdfa_settings',
+			'cache_cleared',
+			sprintf(
+				__( 'Cache wyczyszczony (%d wpisów).', 'markdown-for-agents' ),
+				$count
+			),
+			'success'
+		);
+	}
+
 	public static function render(): void {
+		self::handle_clear_cache();
 		?>
 		<form method="post" action="options.php">
 			<?php
@@ -203,6 +267,18 @@ class MDFA_Admin_Tab_Settings {
 			do_settings_sections( 'markdown-for-agents' );
 			submit_button( __( 'Zapisz ustawienia', 'markdown-for-agents' ) );
 			?>
+		</form>
+
+		<hr>
+		<h2><?php esc_html_e( 'Cache Markdown', 'markdown-for-agents' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Wyczyść wszystkie zapisane wersje Markdown. Przydatne po zmianie konfiguracji lub aktywacji nowych wtyczek (np. WooCommerce).', 'markdown-for-agents' ); ?></p>
+		<form method="post">
+			<?php wp_nonce_field( 'mdfa_clear_cache' ); ?>
+			<p>
+				<button type="submit" name="mdfa_clear_cache" value="1" class="button button-secondary">
+					<?php esc_html_e( 'Wyczyść cały cache', 'markdown-for-agents' ); ?>
+				</button>
+			</p>
 		</form>
 		<?php
 	}

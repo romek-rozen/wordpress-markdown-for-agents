@@ -132,6 +132,18 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 	}
 
 	public function column_post_title( $item ): string {
+		if ( ! empty( $item->term_id ) && ! empty( $item->taxonomy ) ) {
+			$term = get_term( (int) $item->term_id, $item->taxonomy );
+			if ( $term && ! is_wp_error( $term ) ) {
+				$edit_link = get_edit_term_link( $term->term_id, $term->taxonomy );
+				return sprintf(
+					'<a href="%s">%s</a> <em>(%s)</em>',
+					esc_url( $edit_link ),
+					esc_html( $term->name ),
+					esc_html( get_taxonomy( $term->taxonomy )->labels->singular_name ?? $term->taxonomy )
+				);
+			}
+		}
 		if ( $item->post_title ) {
 			return sprintf(
 				'<a href="%s">%s</a>',

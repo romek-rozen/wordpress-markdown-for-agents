@@ -4,6 +4,7 @@ class MDFA_Stats_Tracker {
 
 	public static function init(): void {
 		add_action( 'template_redirect', [ __CLASS__, 'track_html_request' ], 99 );
+		add_action( 'template_redirect', [ __CLASS__, 'track_html_archive_request' ], 99 );
 	}
 
 	public static function track_html_request(): void {
@@ -48,6 +49,45 @@ class MDFA_Stats_Tracker {
 
 		$stats['html_requests']++;
 		$stats['html_tokens_estimated'] += (int) $tokens;
+
+		if ( empty( $stats['started_at'] ) ) {
+			$stats['started_at'] = current_time( 'mysql' );
+		}
+
+		update_option( 'mdfa_stats', $stats, false );
+	}
+
+	public static function track_html_archive_request(): void {
+		if ( ! ( is_tax() || is_category() || is_tag() ) ) {
+			return;
+		}
+
+		if ( get_query_var( 'format' ) === 'md' ) {
+			return;
+		}
+
+		$accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+		if ( stripos( $accept, 'text/markdown' ) !== false ) {
+			return;
+		}
+
+		$term = get_queried_object();
+		if ( ! ( $term instanceof WP_Term ) ) {
+			return;
+		}
+
+		$enabled_taxonomies = (array) get_option( 'mdfa_taxonomies', [ 'category', 'post_tag' ] );
+		if ( ! in_array( $term->taxonomy, $enabled_taxonomies, true ) ) {
+			return;
+		}
+
+		$stats = get_option( 'mdfa_stats', [
+			'html_requests'         => 0,
+			'html_tokens_estimated' => 0,
+			'started_at'            => current_time( 'mysql' ),
+		] );
+
+		$stats['html_archive_requests'] = ( $stats['html_archive_requests'] ?? 0 ) + 1;
 
 		if ( empty( $stats['started_at'] ) ) {
 			$stats['started_at'] = current_time( 'mysql' );
