@@ -136,6 +136,127 @@ class MDFA_Converter {
 		}
 
 		self::invalidate_archive_cache( $post_id );
+		self::invalidate_home_cache();
+	}
+
+	public static function to_markdown_home( int $page = 1 ): string|false {
+		$ttl = (int) get_option( 'mdfa_cache_ttl', 3600 );
+
+		if ( $ttl > 0 ) {
+			$cache_key = self::get_home_cache_key( $page );
+			$cached    = get_transient( $cache_key );
+			if ( $cached !== false ) {
+				return $cached;
+			}
+		}
+
+		$posts_per_page = (int) get_option( 'posts_per_page', 10 );
+		$query          = new \WP_Query( [
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'paged'          => max( 1, $page ),
+			'posts_per_page' => $posts_per_page,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+		] );
+
+		$total_pages = (int) $query->max_num_pages;
+		$post_count  = (int) $query->found_posts;
+
+		$frontmatter = self::generate_home_frontmatter( $page, $total_pages, $post_count );
+		$posts_list  = self::generate_home_posts_list( $query );
+
+		$parts   = [ $frontmatter, $posts_list ];
+
+		if ( $total_pages > 1 ) {
+			$parts[] = self::generate_home_pagination_links( $page, $total_pages );
+		}
+
+		$markdown = implode( "\n\n", $parts );
+
+		if ( $ttl > 0 ) {
+			set_transient( $cache_key, $markdown, $ttl );
+		}
+
+		return $markdown;
+	}
+
+	private static function generate_home_frontmatter( int $page, int $total_pages, int $post_count ): string {
+		$lines   = [];
+		$lines[] = '---';
+		$lines[] = 'type: "home"';
+		$lines[] = 'name: "' . self::escape_yaml( get_bloginfo( 'name' ) ) . '"';
+		$description = get_bloginfo( 'description' );
+		if ( $description ) {
+			$lines[] = 'description: "' . self::escape_yaml( $description ) . '"';
+		}
+		$lines[] = 'url: "' . home_url( '/' ) . '"';
+		$lines[] = 'post_count: ' . $post_count;
+		$lines[] = 'page: ' . $page;
+		$lines[] = 'total_pages: ' . $total_pages;
+		$lines[] = '---';
+
+		return implode( "\n", $lines );
+	}
+
+	private static function generate_home_posts_list( \WP_Query $query ): string {
+		if ( ! $query->have_posts() ) {
+			return __( 'Brak wpisów.', 'markdown-for-agents' );
+		}
+
+		$lines   = [];
+		$lines[] = '## ' . self::escape_yaml( get_bloginfo( 'name' ) );
+		$lines[] = '';
+
+		while ( $query->have_posts() ) {
+			$query->the_post();
+			$post = get_post();
+
+			$title = get_the_title( $post );
+			$url   = get_permalink( $post );
+			$date  = get_the_date( 'Y-m-d', $post );
+
+			$lines[] = "- [{$title}]({$url}) — {$date}";
+
+			$excerpt = get_the_excerpt( $post );
+			if ( $excerpt ) {
+				$lines[] = "  > {$excerpt}";
+			}
+
+			$lines[] = '';
+		}
+
+		wp_reset_postdata();
+
+		return implode( "\n", $lines );
+	}
+
+	private static function generate_home_pagination_links( int $page, int $total_pages ): string {
+		$base_url = home_url( '/' );
+
+		$lines   = [];
+		$lines[] = '---';
+
+		if ( $page > 1 ) {
+			$prev_url = add_query_arg( [ 'format' => 'md', 'paged' => $page - 1 ], $base_url );
+			$lines[]  = __( 'Poprzednia strona', 'markdown-for-agents' ) . ": [{$prev_url}]({$prev_url})";
+		}
+		if ( $page < $total_pages ) {
+			$next_url = add_query_arg( [ 'format' => 'md', 'paged' => $page + 1 ], $base_url );
+			$lines[]  = __( 'Następna strona', 'markdown-for-agents' ) . ": [{$next_url}]({$next_url})";
+		}
+
+		return implode( "  \n", $lines );
+	}
+
+	private static function get_home_cache_key( int $page ): string {
+		global $wpdb;
+
+		$latest_modified = (string) $wpdb->get_var(
+			"SELECT MAX(post_modified) FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish'"
+		);
+
+		return "mdfa_home_{$page}_" . md5( $latest_modified );
 	}
 
 	public static function to_markdown_archive( \WP_Term $term, int $page = 1 ): string|false {
@@ -328,6 +449,17 @@ class MDFA_Converter {
 		}
 
 		return "mdfa_archive_{$taxonomy_safe}_{$term_id}_{$page}_" . md5( $latest_modified );
+	}
+
+	private static function invalidate_home_cache(): void {
+		global $wpdb;
+
+		$pattern = $wpdb->esc_like( 'mdfa_home_' ) . '%';
+		$wpdb->query( $wpdb->prepare(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+			'_transient_' . $pattern,
+			'_transient_timeout_' . $pattern
+		) );
 	}
 
 	private static function invalidate_archive_cache( int $post_id ): void {

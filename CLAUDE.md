@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WordPress plugin implementing the **Markdown for Agents** specification (Cloudflare, Feb 2026). Serves AI agents (GPTBot, ClaudeBot, Gemini etc.) with Markdown instead of HTML, reducing token usage ~80%.
 
-- **Working version:** 1.0.4 (in development)
+- **Working version:** 1.0.6-rc1 (in development)
 - **Language:** PHP 8.0+
 - **Platform:** WordPress 6.0+ (requires Gutenberg block content)
 - **Spec references:** [Cloudflare blog](https://blog.cloudflare.com/markdown-for-agents/), [Cloudflare docs](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/), [Content Signals](https://contentsignals.org/)

@@ -2,6 +2,15 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.6-rc1] — 2026-02-16
+
+### Dodane
+- Obsługa statycznej strony głównej (`show_on_front=page`) w `?format=md` i `Accept: text/markdown`
+- Obsługa blog page (`is_home()`) — listing najnowszych postów z frontmatter `type: "home"`
+- Discovery tag `<link rel="alternate">` dla strony głównej i blog page
+- Vary header dla strony głównej i blog page
+- Invalidacja cache home przy `save_post`
+
 ## [1.0.5] — 2026-02-15
 
 ### Dodane

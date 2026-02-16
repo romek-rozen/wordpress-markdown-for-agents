@@ -7,6 +7,28 @@ class MDFA_Discovery {
 	}
 
 	public static function add_discovery_tag(): void {
+		if ( is_front_page() && ! is_home() ) {
+			$enabled_types = (array) get_option( 'mdfa_post_types', [ 'post', 'page' ] );
+			if ( in_array( 'page', $enabled_types, true ) ) {
+				$md_url = add_query_arg( 'format', 'md', home_url( '/' ) );
+				printf(
+					'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
+					esc_url( $md_url )
+				);
+			}
+			return;
+		}
+
+		if ( is_home() ) {
+			$blog_url = is_front_page() ? home_url( '/' ) : get_permalink( get_option( 'page_for_posts' ) );
+			$md_url   = add_query_arg( 'format', 'md', $blog_url ?: home_url( '/' ) );
+			printf(
+				'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
+				esc_url( $md_url )
+			);
+			return;
+		}
+
 		$obj = get_queried_object();
 
 		if ( is_singular() && $obj instanceof WP_Post ) {
