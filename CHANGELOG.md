@@ -2,6 +2,12 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.6-rc3] — 2026-02-18
+
+### Naprawione
+- Fix `/index.md` na root URL — PHP warnings i błędna treść (blog listing zamiast statycznej front page)
+- Fix `is_static_front_page_request()` żeby rozpoznawała `/index.md` jako root request
+
 ## [1.0.6-rc2] — 2026-02-18
 
 ### Dodane

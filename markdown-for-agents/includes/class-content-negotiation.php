@@ -182,10 +182,11 @@ class MDFA_Content_Negotiation {
 			&& ! get_query_var( 'page_id' )
 			&& ! get_query_var( 'pagename' )
 		) {
-			// Verify the request path is the site root.
+			// Verify the request path is the site root (or /index.md).
 			$path = wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
 			$home_path = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
-			if ( rtrim( $path, '/' ) === rtrim( $home_path, '/' ) ) {
+			$clean_path = preg_replace( '#/?index\.md$#', '', rtrim( $path, '/' ) );
+			if ( $clean_path === rtrim( $home_path, '/' ) ) {
 				return true;
 			}
 		}

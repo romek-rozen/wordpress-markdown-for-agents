@@ -30,6 +30,15 @@ class MDFA_Rewrite {
 		// Strip /index.md suffix.
 		$clean_path = preg_replace( '#/?index\.md$#', '', $path );
 
+		// Root /index.md — no re-parse needed (WP handles root specially).
+		if ( $clean_path === '' ) {
+			$wp->request       = '';
+			$wp->matched_rule  = '';
+			$wp->matched_query = '';
+			$wp->query_vars    = [ 'format' => 'md' ];
+			return;
+		}
+
 		// Temporarily override REQUEST_URI for WP's parse_request.
 		$original_uri = $_SERVER['REQUEST_URI'];
 		$_SERVER['REQUEST_URI'] = '/' . $clean_path . ( $clean_path ? '/' : '' );
