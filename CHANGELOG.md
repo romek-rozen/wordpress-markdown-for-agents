@@ -2,27 +2,16 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
-## [1.0.6-rc3] — 2026-02-18
-
-### Naprawione
-- Fix `/index.md` na root URL — PHP warnings i błędna treść (blog listing zamiast statycznej front page)
-- Fix `is_static_front_page_request()` żeby rozpoznawała `/index.md` jako root request
-
-## [1.0.6-rc2] — 2026-02-18
+## [1.0.6] — 2026-02-18
 
 ### Dodane
-- Rewrite rules `/slug/index.md` — czyste URL-e do Markdown bez parametrów query
-- Automatyczne generowanie reguł dla wszystkich postów, stron, kategorii, tagów i archiwów
-- Discovery tag `<link rel="alternate">` teraz wskazuje na `/index.md` zamiast `?format=md`
-- Flush rewrite rules przy aktywacji/dezaktywacji pluginu
-- Wsteczna kompatybilność — `?format=md` i `Accept: text/markdown` nadal działają
-
-## [1.0.6-rc1] — 2026-02-16
-
-### Dodane
-- Obsługa statycznej strony głównej (`show_on_front=page`) w `?format=md` i `Accept: text/markdown`
+- Obsługa statycznej strony głównej (`show_on_front=page`) w Markdown
 - Obsługa blog page (`is_home()`) — listing najnowszych postów z frontmatter `type: "home"`
 - Discovery tag `<link rel="alternate">` dla strony głównej i blog page
+- Rewrite rules `/slug/index.md` — czyste URL-e do Markdown bez parametrów query
+- Discovery tag teraz wskazuje na `/index.md` zamiast `?format=md` (pretty permalinks)
+- Wsteczna kompatybilność — `?format=md` i `Accept: text/markdown` nadal działają
+- Vary header dla strony głównej i blog page
 - Vary header dla strony głównej i blog page
 - Invalidacja cache home przy `save_post`
 
