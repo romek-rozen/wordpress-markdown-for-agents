@@ -15,6 +15,7 @@ delete_option( 'mdfa_beta_updates' );
 delete_option( 'mdfa_noindex' );
 delete_option( 'mdfa_canonical' );
 delete_option( 'mdfa_anonymize_ip' );
+delete_option( 'mdfa_plugin_version' );
 delete_option( 'mdfa_ai_bots' );
 delete_option( 'mdfa_search_crawlers' );
 delete_option( 'mdfa_tool_crawlers' );

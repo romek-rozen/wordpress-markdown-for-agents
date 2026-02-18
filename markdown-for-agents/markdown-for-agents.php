@@ -93,6 +93,14 @@ add_action( 'plugins_loaded', function () {
 	}
 
 	MDFA_Request_Log::maybe_migrate();
+
+	// Flush rewrite rules on plugin upgrade (activation hook doesn't fire on auto-update).
+	$stored_version = get_option( 'mdfa_plugin_version', '' );
+	if ( $stored_version !== MDFA_VERSION ) {
+		update_option( 'mdfa_plugin_version', MDFA_VERSION );
+		flush_rewrite_rules();
+	}
+
 	MDFA_Updater::init( __FILE__ );
 	MDFA_Admin::init();
 
