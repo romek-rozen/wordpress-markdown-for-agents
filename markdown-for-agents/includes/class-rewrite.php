@@ -2,38 +2,47 @@
 
 class MDFA_Rewrite {
 
+	private static bool $intercepting = false;
+
 	public static function init(): void {
 		if ( get_option( 'permalink_structure' ) === '' ) {
 			return;
 		}
-		add_filter( 'rewrite_rules_array', [ __CLASS__, 'add_md_rules' ] );
+		add_action( 'parse_request', [ __CLASS__, 'intercept_md_request' ], 0 );
 	}
 
 	/**
-	 * For every existing rewrite rule, create a /index.md variant
-	 * that adds format=md to the query string.
+	 * Detect /index.md suffix in the request and re-resolve without it,
+	 * then inject format=md into query vars.
 	 */
-	public static function add_md_rules( array $rules ): array {
-		$md_rules = [];
-
-		// Handle root /index.md — WP has no ^$ rule, root is handled specially.
-		$md_rules['^index\\.md$'] = 'index.php?format=md';
-
-		foreach ( $rules as $regex => $query ) {
-			if ( ! str_ends_with( $regex, '$' ) || $regex === '^$' ) {
-				continue;
-			}
-
-			// Strip trailing /? or /?$ patterns and rebuild with /index.md
-			$base = substr( $regex, 0, -1 ); // remove $
-			$base = preg_replace( '#/?\??$#', '', $base ); // remove trailing /? or ?
-
-			$md_key = $base . '/index\\.md$';
-			$md_val = rtrim( $query, '&' ) . '&format=md';
-
-			$md_rules[ $md_key ] = $md_val;
+	public static function intercept_md_request( \WP $wp ): void {
+		// Guard against recursion.
+		if ( self::$intercepting ) {
+			return;
 		}
 
-		return array_merge( $md_rules, $rules );
+		$path = trim( $wp->request ?? '', '/' );
+
+		if ( ! str_ends_with( $path, '/index.md' ) && $path !== 'index.md' ) {
+			return;
+		}
+
+		// Strip /index.md suffix.
+		$clean_path = preg_replace( '#/?index\.md$#', '', $path );
+
+		// Temporarily override REQUEST_URI for WP's parse_request.
+		$original_uri = $_SERVER['REQUEST_URI'];
+		$_SERVER['REQUEST_URI'] = '/' . $clean_path . ( $clean_path ? '/' : '' );
+
+		// Re-parse the request with the clean path.
+		self::$intercepting = true;
+		$wp->parse_request();
+		self::$intercepting = false;
+
+		// Restore original URI.
+		$_SERVER['REQUEST_URI'] = $original_uri;
+
+		// Inject format=md.
+		$wp->query_vars['format'] = 'md';
 	}
 }
