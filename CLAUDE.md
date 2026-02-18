@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WordPress plugin implementing the **Markdown for Agents** specification (Cloudflare, Feb 2026). Serves AI agents (GPTBot, ClaudeBot, Gemini etc.) with Markdown instead of HTML, reducing token usage ~80%.
 
-- **Working version:** 1.0.6-rc1 (in development)
+- **Working version:** 1.0.6-rc2 (in development)
 - **Language:** PHP 8.0+
 - **Platform:** WordPress 6.0+ (requires Gutenberg block content)
 - **Spec references:** [Cloudflare blog](https://blog.cloudflare.com/markdown-for-agents/), [Cloudflare docs](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/), [Content Signals](https://contentsignals.org/)
@@ -33,6 +33,7 @@ wp-markdown-for-agents/                  # repo root
         ├── class-request-log-table.php  # WP_List_Table for logs (filtering, sorting, pagination)
         ├── class-stats-tracker.php      # HTML request counter + token estimation
         ├── class-updater.php           # auto-update from Forgejo repository
+        ├── class-rewrite.php           # /slug/index.md rewrite rules
         ├── class-admin.php              # wp-admin dispatcher (tabs, menu, Screen Options)
         ├── class-admin-tab-settings.php # settings tab (register_settings, field renderers)
         ├── class-admin-tab-logs.php     # logs tab (render + clear handler)
@@ -78,6 +79,7 @@ Four-layer content discovery system:
 | MDFA_Request_Log_Table | `includes/class-request-log-table.php` | WP_List_Table with filtering, sorting, pagination |
 | MDFA_Stats_Tracker | `includes/class-stats-tracker.php` | HTML request counter + token estimation (via post meta, not per-request rendering) |
 | MDFA_Updater | `includes/class-updater.php` | Auto-update from Forgejo releases API |
+| MDFA_Rewrite | `includes/class-rewrite.php` | `/slug/index.md` rewrite rules (auto-generated from WP rules) |
 | MDFA_Admin | `includes/class-admin.php` | Tabbed admin (settings, logs, stats) |
 
 ## Performance Note
@@ -167,5 +169,5 @@ After every feature/fix, update `CHANGELOG.md` under the current working version
 - **Sprint 3** — DONE: Taxonomy archive support (categories, tags, WooCommerce product_cat/product_tag, custom taxonomies). Archive frontmatter + post list + subcategories + pagination. DB migration for term_id/taxonomy in request log. Settings UI for enabled taxonomies.
 - **Sprint 3.1** — DONE: HTTP `Link: rel="canonical"` header (RFC 5988) pointing to original HTML page, configurable in settings (default: on)
 - **Sprint 3.2** — DONE: Pre-release opt-in (beta updates checkbox, separate cache, visual "(beta)" label, update check TTL 12h→1h)
-- **Sprint 4** — TODO: rewrite rules (`/slug/index.md`), page builder compatibility
+- **Sprint 4** — DONE (partial): rewrite rules (`/slug/index.md`) via `rewrite_rules_array` filter. TODO: page builder compatibility
 

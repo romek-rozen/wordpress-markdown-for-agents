@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Markdown for Agents
  * Description: Serves AI agents with Markdown instead of HTML, reducing token usage ~80%. Implements Cloudflare's Markdown for Agents specification.
- * Version: 1.0.6-rc1
+ * Version: 1.0.6-rc2
  * Tested up to: 6.9.1
  * Requires at least: 6.0
  * Requires PHP: 8.0
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MDFA_VERSION', '1.0.6-rc1' );
+define( 'MDFA_VERSION', '1.0.6-rc2' );
 define( 'MDFA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once MDFA_PLUGIN_DIR . 'vendor/autoload.php';
@@ -33,6 +33,7 @@ require_once MDFA_PLUGIN_DIR . 'includes/class-admin-tab-stats.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-admin.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-content-signals.php';
 require_once MDFA_PLUGIN_DIR . 'includes/class-updater.php';
+require_once MDFA_PLUGIN_DIR . 'includes/class-rewrite.php';
 
 register_activation_hook( __FILE__, function () {
 	if ( version_compare( PHP_VERSION, '8.0', '<' ) ) {
@@ -45,6 +46,11 @@ register_activation_hook( __FILE__, function () {
 	add_option( 'mdfa_canonical', true );
 	add_option( 'mdfa_db_version', 3 );
 	MDFA_Request_Log::create_table();
+	flush_rewrite_rules();
+} );
+
+register_deactivation_hook( __FILE__, function () {
+	flush_rewrite_rules();
 } );
 
 add_filter( 'query_vars', fn( array $vars ): array => [ ...$vars, 'format' ] );
@@ -97,4 +103,5 @@ add_action( 'plugins_loaded', function () {
 	MDFA_Content_Negotiation::init();
 	MDFA_Content_Signals::init();
 	MDFA_Stats_Tracker::init();
+	MDFA_Rewrite::init();
 } );

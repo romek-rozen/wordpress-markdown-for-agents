@@ -34,6 +34,9 @@ $wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ('_mdfa_cache_key
 // Usuń term meta (content signals)
 $wpdb->query( "DELETE FROM {$wpdb->termmeta} WHERE meta_key IN ('_mdfa_signal_ai_train', '_mdfa_signal_search', '_mdfa_signal_ai_input')" );
 
+// Wyczyść rewrite rules
+flush_rewrite_rules();
+
 // Usuń transienty cache
 $wpdb->query(
 	"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_mdfa_md_%' OR option_name LIKE '_transient_timeout_mdfa_md_%' OR option_name LIKE '_transient_mdfa_html_tokens_%' OR option_name LIKE '_transient_timeout_mdfa_html_tokens_%' OR option_name LIKE '_transient_mdfa_archive_%' OR option_name LIKE '_transient_timeout_mdfa_archive_%' OR option_name LIKE '_transient_mdfa_home_%' OR option_name LIKE '_transient_timeout_mdfa_home_%'"

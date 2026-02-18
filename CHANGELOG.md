@@ -2,6 +2,15 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.6-rc2] — 2026-02-18
+
+### Dodane
+- Rewrite rules `/slug/index.md` — czyste URL-e do Markdown bez parametrów query
+- Automatyczne generowanie reguł dla wszystkich postów, stron, kategorii, tagów i archiwów
+- Discovery tag `<link rel="alternate">` teraz wskazuje na `/index.md` zamiast `?format=md`
+- Flush rewrite rules przy aktywacji/dezaktywacji pluginu
+- Wsteczna kompatybilność — `?format=md` i `Accept: text/markdown` nadal działają
+
 ## [1.0.6-rc1] — 2026-02-16
 
 ### Dodane

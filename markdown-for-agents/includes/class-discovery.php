@@ -10,7 +10,7 @@ class MDFA_Discovery {
 		if ( is_front_page() && ! is_home() ) {
 			$enabled_types = (array) get_option( 'mdfa_post_types', [ 'post', 'page' ] );
 			if ( in_array( 'page', $enabled_types, true ) ) {
-				$md_url = add_query_arg( 'format', 'md', home_url( '/' ) );
+				$md_url = self::get_md_url( home_url( '/' ) );
 				printf(
 					'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
 					esc_url( $md_url )
@@ -21,7 +21,7 @@ class MDFA_Discovery {
 
 		if ( is_home() ) {
 			$blog_url = is_front_page() ? home_url( '/' ) : get_permalink( get_option( 'page_for_posts' ) );
-			$md_url   = add_query_arg( 'format', 'md', $blog_url ?: home_url( '/' ) );
+			$md_url   = self::get_md_url( $blog_url ?: home_url( '/' ) );
 			printf(
 				'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
 				esc_url( $md_url )
@@ -37,7 +37,7 @@ class MDFA_Discovery {
 				return;
 			}
 
-			$md_url = add_query_arg( 'format', 'md', get_permalink( $obj ) );
+			$md_url = self::get_md_url( get_permalink( $obj ) );
 
 			printf(
 				'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
@@ -57,12 +57,19 @@ class MDFA_Discovery {
 				return;
 			}
 
-			$md_url = add_query_arg( 'format', 'md', $term_link );
+			$md_url = self::get_md_url( $term_link );
 
 			printf(
 				'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
 				esc_url( $md_url )
 			);
 		}
+	}
+
+	private static function get_md_url( string $canonical_url ): string {
+		if ( get_option( 'permalink_structure' ) === '' ) {
+			return add_query_arg( 'format', 'md', $canonical_url );
+		}
+		return rtrim( $canonical_url, '/' ) . '/index.md';
 	}
 }
