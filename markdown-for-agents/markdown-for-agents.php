@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Markdown for Agents
  * Description: Serves AI agents with Markdown instead of HTML, reducing token usage ~80%. Implements Cloudflare's Markdown for Agents specification.
- * Version: 1.0.7-rc1
+ * Version: 1.0.7-rc3
  * Tested up to: 6.9.1
  * Requires at least: 6.0
  * Requires PHP: 8.0
