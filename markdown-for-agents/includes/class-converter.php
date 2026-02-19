@@ -92,7 +92,12 @@ class MDFA_Converter {
 			$product = wc_get_product( $post->ID );
 			if ( $product ) {
 				$lines[] = 'add_to_cart_url: "' . self::escape_yaml( $product->add_to_cart_url() ) . '"';
-				$lines[] = 'price: "' . self::escape_yaml( $product->get_price() ) . '"';
+				if ( $product->is_on_sale() && $product->get_regular_price() !== '' ) {
+					$lines[] = 'regular_price: "' . self::escape_yaml( $product->get_regular_price() ) . '"';
+					$lines[] = 'sale_price: "' . self::escape_yaml( $product->get_sale_price() ) . '"';
+				} else {
+					$lines[] = 'price: "' . self::escape_yaml( $product->get_price() ) . '"';
+				}
 				$lines[] = 'currency: "' . self::escape_yaml( get_woocommerce_currency() ) . '"';
 				if ( $product->get_sku() ) {
 					$lines[] = 'sku: "' . self::escape_yaml( $product->get_sku() ) . '"';
@@ -361,7 +366,11 @@ class MDFA_Converter {
 			if ( $is_product_taxonomy ) {
 				$product = wc_get_product( $post->ID );
 				if ( $product ) {
-					$price_info = $product->get_price() . ' ' . get_woocommerce_currency();
+					if ( $product->is_on_sale() && $product->get_regular_price() !== '' ) {
+						$price_info = '~~' . $product->get_regular_price() . '~~ ' . $product->get_sale_price() . ' ' . get_woocommerce_currency();
+					} else {
+						$price_info = $product->get_price() . ' ' . get_woocommerce_currency();
+					}
 					$sku_info   = $product->get_sku() ? ' | SKU: ' . $product->get_sku() : '';
 					$lines[]    = "- [{$title}]({$url}) — {$price_info}{$sku_info}";
 				} else {

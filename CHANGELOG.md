@@ -2,6 +2,12 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.7-rc2] — 2026-02-19
+
+### Dodane
+- WooCommerce: rozróżnienie ceny regularnej i promocyjnej w frontmatter produktu (`regular_price` + `sale_price` zamiast `price` gdy aktywna promocja)
+- WooCommerce: przekreślenie ceny regularnej w listach archiwów produktowych (~~49.99~~ 39.99 PLN)
+
 ## [1.0.7-rc1] — 2026-02-19
 
 ### Dodane
