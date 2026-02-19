@@ -26,14 +26,14 @@ wp-markdown-for-agents/                  # repo root
     ├── vendor/                          # composer install --no-dev
     └── includes/
         ├── class-converter.php          # HTML→Markdown + YAML frontmatter
-        ├── class-content-negotiation.php # Accept header + ?format=md routing
-        ├── class-discovery.php          # <link rel="alternate"> tag
+        ├── class-content-negotiation.php # Accept header + ?format=md + ?format=txt routing
+        ├── class-discovery.php          # <link rel="alternate"> tags (text/markdown + text/plain)
         ├── class-token-estimator.php    # token count estimation
         ├── class-request-log.php        # request logging (custom DB table) + bot identification
         ├── class-request-log-table.php  # WP_List_Table for logs (filtering, sorting, pagination)
         ├── class-stats-tracker.php      # HTML request counter + token estimation
         ├── class-updater.php           # auto-update from Forgejo repository
-        ├── class-rewrite.php           # /slug/index.md rewrite rules
+        ├── class-rewrite.php           # /slug/index.md + /slug/index.txt rewrite rules
         ├── class-admin.php              # wp-admin dispatcher (tabs, menu, Screen Options)
         ├── class-admin-tab-settings.php # settings tab (register_settings, field renderers)
         ├── class-admin-tab-logs.php     # logs tab (render + clear handler)
@@ -49,8 +49,8 @@ Composer with `league/html-to-markdown ^5.1`. Run `composer install --no-dev` in
 Four-layer content discovery system:
 
 1. **Vary header** (`send_headers`) — `Vary: Accept` on HTML responses for enabled post types (enables HEAD-based discovery)
-2. **Discovery tag** (`wp_head`) — `<link rel="alternate" type="text/markdown">` on singular views and taxonomy archives
-3. **Static endpoint** (`template_redirect`) — `?format=md` URL parameter (posts and taxonomy archives)
+2. **Discovery tags** (`wp_head`) — `<link rel="alternate" type="text/markdown">` + `<link rel="alternate" type="text/plain">` on singular views and taxonomy archives
+3. **Static endpoint** (`template_redirect`) — `?format=md` and `?format=txt` URL parameters (posts and taxonomy archives). `txt` serves identical Markdown content with `Content-Type: text/plain` for compatibility with clients that don't support `text/markdown`
 4. **Content negotiation** (`template_redirect`, priority 5) — transparent `Accept: text/markdown` handling (posts and taxonomy archives). Uses `$_GET['format']` fallback for front page where `get_query_var()` doesn't work
 
 **Conversion pipeline (single posts):** `post_content` → `apply_filters('the_content')` (render Gutenberg blocks) → `league/html-to-markdown` → prepend YAML frontmatter → serve with proper headers.
@@ -59,7 +59,7 @@ Four-layer content discovery system:
 
 **WooCommerce support:** Converter uses universal taxonomy retrieval (`get_object_taxonomies()`) for any post type. For `product` post type, frontmatter includes `add_to_cart_url`, `price`, `currency`, `sku`, `in_stock` via WooCommerce API (guarded by `function_exists('wc_get_product')`).
 
-**HTTP headers:** `Content-Type: text/markdown; charset=utf-8`, `Vary: Accept`, `X-Markdown-Tokens: <count>`, `Content-Signal: ai-train=yes, search=yes, ai-input=yes`, `X-Robots-Tag: noindex`, `Link: <url>; rel="canonical"` (RFC 5988, configurable).
+**HTTP headers:** `Content-Type: text/markdown; charset=utf-8` (or `text/plain; charset=utf-8` for `?format=txt`), `Vary: Accept`, `X-Markdown-Tokens: <count>`, `Content-Signal: ai-train=yes, search=yes, ai-input=yes`, `X-Robots-Tag: noindex`, `Link: <url>; rel="canonical"` (RFC 5988, configurable).
 
 **Caching:** WordPress Transients API, key `mdfa_md_{post_id}_{modified_hash}`, invalidated on `save_post` via post meta `_mdfa_cache_key`.
 
@@ -169,5 +169,6 @@ After every feature/fix, update `CHANGELOG.md` under the current working version
 - **Sprint 3** — DONE: Taxonomy archive support (categories, tags, WooCommerce product_cat/product_tag, custom taxonomies). Archive frontmatter + post list + subcategories + pagination. DB migration for term_id/taxonomy in request log. Settings UI for enabled taxonomies.
 - **Sprint 3.1** — DONE: HTTP `Link: rel="canonical"` header (RFC 5988) pointing to original HTML page, configurable in settings (default: on)
 - **Sprint 3.2** — DONE: Pre-release opt-in (beta updates checkbox, separate cache, visual "(beta)" label, update check TTL 12h→1h)
-- **Sprint 4** — DONE (partial): rewrite rules (`/slug/index.md`) via `rewrite_rules_array` filter. TODO: page builder compatibility
+- **Sprint 4** — DONE: rewrite rules (`/slug/index.md`) via `parse_request` hook
+- **Sprint 4.1** — DONE: Plain text format (`?format=txt`, `/slug/index.txt`) — identical Markdown with `Content-Type: text/plain` for compatibility with clients that don't support `text/markdown`. TODO: page builder compatibility
 

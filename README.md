@@ -1,4 +1,4 @@
-# Markdown for Agents
+# WordPress Markdown for Agents
 
 ![WordPress 6.0+](https://img.shields.io/badge/WordPress-6.0%2B-21759b?logo=wordpress)
 ![PHP 8.0+](https://img.shields.io/badge/PHP-8.0%2B-777bb4?logo=php&logoColor=white)
@@ -49,7 +49,9 @@ Link: <https://example.com/post/>; rel="canonical"
 
 - **Content negotiation** — responds with Markdown when `Accept: text/markdown` header is present
 - **Static endpoint** — `?format=md` URL parameter for any post/page
-- **Discovery tag** — `<link rel="alternate" type="text/markdown">` in `<head>`
+- **Plain text fallback** — `?format=txt` / `/slug/index.txt` serves identical Markdown with `Content-Type: text/plain` for clients that don't support `text/markdown`
+- **Pretty URLs** — `/slug/index.md` and `/slug/index.txt` (with pretty permalinks enabled)
+- **Discovery tags** — `<link rel="alternate" type="text/markdown">` and `<link rel="alternate" type="text/plain">` in `<head>`
 - **YAML frontmatter** — title, author, date, categories, tags, URL
 - **HTTP headers** — `Content-Type`, `Vary`, `X-Markdown-Tokens`, `Content-Signal` per spec
 - **Token estimation** — approximate token count in response header
@@ -84,6 +86,12 @@ curl 'https://your-site.com/hello-world/?format=md'
 
 # Via Accept header (how AI agents do it)
 curl -H 'Accept: text/markdown' 'https://your-site.com/hello-world/'
+
+# Pretty URL
+curl 'https://your-site.com/hello-world/index.md'
+
+# Plain text (same content, Content-Type: text/plain)
+curl 'https://your-site.com/hello-world/index.txt'
 ```
 
 Configure which post types and taxonomies are enabled in **Settings → Markdown for Agents**.
@@ -123,7 +131,6 @@ See `docker-compose.yml` for the full dev environment setup.
 
 ## Planned features
 
-- Pretty URLs via rewrite rules (`/slug/index.md`)
 - Page builder compatibility
 
 ## Links
