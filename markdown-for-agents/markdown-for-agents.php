@@ -55,6 +55,30 @@ register_deactivation_hook( __FILE__, function () {
 
 add_filter( 'query_vars', fn( array $vars ): array => [ ...$vars, 'format' ] );
 
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), function ( array $links ): array {
+	$url = admin_url( 'options-general.php?page=markdown-for-agents' );
+	array_unshift( $links, '<a href="' . esc_url( $url ) . '">Ustawienia</a>' );
+
+	$update_url = wp_nonce_url( admin_url( 'plugins.php?mdfa_check_update=1' ), 'mdfa_check_update' );
+	$links[]    = '<a href="' . esc_url( $update_url ) . '">Sprawdź aktualizacje</a>';
+
+	return $links;
+} );
+
+add_action( 'admin_init', function () {
+	if ( empty( $_GET['mdfa_check_update'] ) ) {
+		return;
+	}
+	check_admin_referer( 'mdfa_check_update' );
+
+	delete_transient( 'mdfa_update_check' );
+	delete_transient( 'mdfa_update_check_beta' );
+	delete_site_transient( 'update_plugins' );
+
+	wp_safe_redirect( admin_url( 'plugins.php' ) );
+	exit;
+} );
+
 add_action( 'save_post', [ 'MDFA_Converter', 'invalidate_cache' ] );
 
 add_action( 'plugins_loaded', function () {
