@@ -323,7 +323,18 @@ class MDFA_Request_Log {
 	public static function log( int $post_id, int $tokens, ?int $term_id = null, ?string $taxonomy = null ): void {
 		global $wpdb;
 
-		$method     = get_query_var( 'format' ) === 'md' ? 'format_param' : 'accept_header';
+		$format_var = get_query_var( 'format' );
+		if ( ! $format_var && isset( $_GET['format'] ) ) {
+			$format_var = $_GET['format'];
+		}
+
+		if ( $format_var === 'txt' ) {
+			$method = 'format_txt';
+		} elseif ( $format_var === 'md' ) {
+			$method = 'format_param';
+		} else {
+			$method = 'accept_header';
+		}
 		$user_agent = sanitize_text_field( mb_substr( $_SERVER['HTTP_USER_AGENT'] ?? '', 0, 512 ) );
 		$bot        = self::identify_bot( $user_agent );
 

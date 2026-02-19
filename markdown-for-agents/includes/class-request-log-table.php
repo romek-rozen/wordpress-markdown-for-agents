@@ -95,8 +95,9 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 
 			<select name="method_filter">
 				<option value=""><?php esc_html_e( 'Wszystkie metody', 'markdown-for-agents' ); ?></option>
-				<option value="accept_header" <?php selected( $method_filter, 'accept_header' ); ?>>Accept header</option>
+				<option value="accept_header" <?php selected( $method_filter, 'accept_header' ); ?>>Accept: text/markdown</option>
 				<option value="format_param" <?php selected( $method_filter, 'format_param' ); ?>>?format=md</option>
+				<option value="format_txt" <?php selected( $method_filter, 'format_txt' ); ?>>?format=txt</option>
 			</select>
 
 			<?php submit_button( __( 'Filtruj', 'markdown-for-agents' ), '', 'filter_action', false ); ?>
@@ -178,9 +179,11 @@ class MDFA_Request_Log_Table extends WP_List_Table {
 	}
 
 	public function column_request_method( $item ): string {
-		return $item->request_method === 'format_param'
-			? '<code>?format=md</code>'
-			: '<code>Accept</code>';
+		return match ( $item->request_method ) {
+			'format_param' => '<code>?format=md</code>',
+			'format_txt'   => '<code>?format=txt</code>',
+			default        => '<code>Accept</code>',
+		};
 	}
 
 	public function column_tokens( $item ): string {

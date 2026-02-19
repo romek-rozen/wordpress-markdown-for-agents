@@ -10,22 +10,14 @@ class MDFA_Discovery {
 		if ( is_front_page() && ! is_home() ) {
 			$enabled_types = (array) get_option( 'mdfa_post_types', [ 'post', 'page' ] );
 			if ( in_array( 'page', $enabled_types, true ) ) {
-				$md_url = self::get_md_url( home_url( '/' ) );
-				printf(
-					'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
-					esc_url( $md_url )
-				);
+				self::print_alternate_tags( home_url( '/' ) );
 			}
 			return;
 		}
 
 		if ( is_home() ) {
 			$blog_url = is_front_page() ? home_url( '/' ) : get_permalink( get_option( 'page_for_posts' ) );
-			$md_url   = self::get_md_url( $blog_url ?: home_url( '/' ) );
-			printf(
-				'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
-				esc_url( $md_url )
-			);
+			self::print_alternate_tags( $blog_url ?: home_url( '/' ) );
 			return;
 		}
 
@@ -36,13 +28,7 @@ class MDFA_Discovery {
 			if ( ! in_array( $obj->post_type, $enabled_types, true ) ) {
 				return;
 			}
-
-			$md_url = self::get_md_url( get_permalink( $obj ) );
-
-			printf(
-				'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
-				esc_url( $md_url )
-			);
+			self::print_alternate_tags( get_permalink( $obj ) );
 			return;
 		}
 
@@ -57,19 +43,26 @@ class MDFA_Discovery {
 				return;
 			}
 
-			$md_url = self::get_md_url( $term_link );
-
-			printf(
-				'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
-				esc_url( $md_url )
-			);
+			self::print_alternate_tags( $term_link );
 		}
 	}
 
-	private static function get_md_url( string $canonical_url ): string {
+	private static function print_alternate_tags( string $canonical_url ): void {
+		printf(
+			'<link rel="alternate" type="text/markdown" href="%s" title="Markdown" />' . "\n",
+			esc_url( self::get_alternate_url( $canonical_url, 'md' ) )
+		);
+		printf(
+			'<link rel="alternate" type="text/plain" href="%s" title="Plain Text" />' . "\n",
+			esc_url( self::get_alternate_url( $canonical_url, 'txt' ) )
+		);
+	}
+
+	private static function get_alternate_url( string $canonical_url, string $format = 'md' ): string {
+		$ext = $format === 'txt' ? 'txt' : 'md';
 		if ( get_option( 'permalink_structure' ) === '' ) {
-			return add_query_arg( 'format', 'md', $canonical_url );
+			return add_query_arg( 'format', $ext, $canonical_url );
 		}
-		return rtrim( $canonical_url, '/' ) . '/index.md';
+		return rtrim( $canonical_url, '/' ) . '/index.' . $ext;
 	}
 }

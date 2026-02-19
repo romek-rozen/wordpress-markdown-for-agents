@@ -41,7 +41,8 @@ class MDFA_Content_Negotiation {
 	}
 
 	public static function handle_markdown_request(): void {
-		if ( ! self::is_markdown_requested() ) {
+		$format = self::get_requested_format();
+		if ( ! $format ) {
 			return;
 		}
 
@@ -52,7 +53,7 @@ class MDFA_Content_Negotiation {
 			if ( $front_page_id ) {
 				$post = get_post( $front_page_id );
 				if ( $post ) {
-					self::handle_singular_request( $post );
+					self::handle_singular_request( $post, $format );
 				}
 			}
 			return;
@@ -60,24 +61,24 @@ class MDFA_Content_Negotiation {
 
 		// Blog page (latest posts listing).
 		if ( is_home() ) {
-			self::handle_home_request();
+			self::handle_home_request( $format );
 			return;
 		}
 
 		$obj = get_queried_object();
 
 		if ( is_singular() && $obj instanceof WP_Post ) {
-			self::handle_singular_request( $obj );
+			self::handle_singular_request( $obj, $format );
 			return;
 		}
 
 		if ( ( is_tax() || is_category() || is_tag() ) && $obj instanceof WP_Term ) {
-			self::handle_archive_request( $obj );
+			self::handle_archive_request( $obj, $format );
 			return;
 		}
 	}
 
-	private static function handle_singular_request( WP_Post $post ): void {
+	private static function handle_singular_request( WP_Post $post, string $format = 'md' ): void {
 		if ( post_password_required( $post ) ) {
 			return;
 		}
@@ -96,10 +97,10 @@ class MDFA_Content_Negotiation {
 
 		MDFA_Request_Log::log( $post->ID, $tokens );
 
-		self::send_markdown_response( $markdown, $tokens, get_permalink( $post ), $post );
+		self::send_markdown_response( $markdown, $tokens, get_permalink( $post ), $post, null, $format );
 	}
 
-	private static function handle_home_request(): void {
+	private static function handle_home_request( string $format = 'md' ): void {
 		$page = (int) get_query_var( 'paged' ) ?: 1;
 
 		$markdown = MDFA_Converter::to_markdown_home( $page );
@@ -112,10 +113,10 @@ class MDFA_Content_Negotiation {
 		MDFA_Request_Log::log( 0, $tokens );
 
 		$home_url = is_front_page() ? home_url( '/' ) : get_permalink( get_option( 'page_for_posts' ) );
-		self::send_markdown_response( $markdown, $tokens, $home_url );
+		self::send_markdown_response( $markdown, $tokens, $home_url, null, null, $format );
 	}
 
-	private static function handle_archive_request( WP_Term $term ): void {
+	private static function handle_archive_request( WP_Term $term, string $format = 'md' ): void {
 		$enabled_taxonomies = (array) get_option( 'mdfa_taxonomies', [ 'category', 'post_tag' ] );
 		if ( ! in_array( $term->taxonomy, $enabled_taxonomies, true ) ) {
 			return;
@@ -132,12 +133,13 @@ class MDFA_Content_Negotiation {
 
 		MDFA_Request_Log::log( 0, $tokens, $term->term_id, $term->taxonomy );
 
-		self::send_markdown_response( $markdown, $tokens, get_term_link( $term ), null, $term );
+		self::send_markdown_response( $markdown, $tokens, get_term_link( $term ), null, $term, $format );
 	}
 
-	private static function send_markdown_response( string $markdown, int $tokens, string $canonical_url = '', ?WP_Post $post = null, ?WP_Term $term = null ): void {
+	private static function send_markdown_response( string $markdown, int $tokens, string $canonical_url = '', ?WP_Post $post = null, ?WP_Term $term = null, string $format = 'md' ): void {
+		$content_type = $format === 'txt' ? 'text/plain' : 'text/markdown';
 		status_header( 200 );
-		header( 'Content-Type: text/markdown; charset=utf-8' );
+		header( 'Content-Type: ' . $content_type . '; charset=utf-8' );
 		header( 'Vary: Accept' );
 		header( 'X-Markdown-Tokens: ' . $tokens );
 		$resolved = MDFA_Content_Signals::get_signals( $post, $term );
@@ -185,7 +187,7 @@ class MDFA_Content_Negotiation {
 			// Verify the request path is the site root (or /index.md).
 			$path = wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
 			$home_path = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
-			$clean_path = preg_replace( '#/?index\.md$#', '', rtrim( $path, '/' ) );
+			$clean_path = preg_replace( '#/?index\.(?:md|txt)$#', '', rtrim( $path, '/' ) );
 			if ( $clean_path === rtrim( $home_path, '/' ) ) {
 				return true;
 			}
@@ -194,20 +196,29 @@ class MDFA_Content_Negotiation {
 		return false;
 	}
 
-	private static function is_markdown_requested(): bool {
-		if ( get_query_var( 'format' ) === 'md' ) {
-			return true;
+	/**
+	 * Detect requested alternate format.
+	 *
+	 * @return string|null 'md', 'txt', or null if not requested.
+	 */
+	private static function get_requested_format(): ?string {
+		$format_var = get_query_var( 'format' );
+		if ( ! $format_var && isset( $_GET['format'] ) ) {
+			$format_var = $_GET['format'];
 		}
 
-		if ( isset( $_GET['format'] ) && $_GET['format'] === 'md' ) {
-			return true;
+		if ( $format_var === 'md' ) {
+			return 'md';
+		}
+		if ( $format_var === 'txt' ) {
+			return 'txt';
 		}
 
 		$accept = $_SERVER['HTTP_ACCEPT'] ?? '';
 		if ( stripos( $accept, 'text/markdown' ) !== false ) {
-			return true;
+			return 'md';
 		}
 
-		return false;
+		return null;
 	}
 }

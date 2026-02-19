@@ -2,6 +2,14 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.7-rc1] — 2026-02-19
+
+### Dodane
+- Alternatywny format `text/plain` — ta sama treść Markdown z `Content-Type: text/plain; charset=utf-8`
+- Nowe endpointy: `?format=txt`, `/slug/index.txt`, root `/index.txt`
+- Discovery tag `<link rel="alternate" type="text/plain">` obok istniejącego `text/markdown`
+- Logowanie requestów `format_txt` w tabeli logów z filtrowaniem
+
 ## [1.0.6] — 2026-02-18
 
 ### Dodane

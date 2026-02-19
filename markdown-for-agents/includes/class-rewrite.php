@@ -23,19 +23,27 @@ class MDFA_Rewrite {
 
 		$path = trim( $wp->request ?? '', '/' );
 
-		if ( ! str_ends_with( $path, '/index.md' ) && $path !== 'index.md' ) {
+		// Detect /index.md or /index.txt suffix.
+		$format = null;
+		if ( str_ends_with( $path, '/index.md' ) || $path === 'index.md' ) {
+			$format = 'md';
+		} elseif ( str_ends_with( $path, '/index.txt' ) || $path === 'index.txt' ) {
+			$format = 'txt';
+		}
+
+		if ( ! $format ) {
 			return;
 		}
 
-		// Strip /index.md suffix.
-		$clean_path = preg_replace( '#/?index\.md$#', '', $path );
+		// Strip /index.md or /index.txt suffix.
+		$clean_path = preg_replace( '#/?index\.(?:md|txt)$#', '', $path );
 
-		// Root /index.md — no re-parse needed (WP handles root specially).
+		// Root /index.md or /index.txt — no re-parse needed (WP handles root specially).
 		if ( $clean_path === '' ) {
 			$wp->request       = '';
 			$wp->matched_rule  = '';
 			$wp->matched_query = '';
-			$wp->query_vars    = [ 'format' => 'md' ];
+			$wp->query_vars    = [ 'format' => $format ];
 			return;
 		}
 
@@ -51,7 +59,7 @@ class MDFA_Rewrite {
 		// Restore original URI.
 		$_SERVER['REQUEST_URI'] = $original_uri;
 
-		// Inject format=md.
-		$wp->query_vars['format'] = 'md';
+		// Inject format.
+		$wp->query_vars['format'] = $format;
 	}
 }
