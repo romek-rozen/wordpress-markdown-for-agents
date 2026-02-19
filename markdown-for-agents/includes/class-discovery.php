@@ -58,7 +58,7 @@ class MDFA_Discovery {
 		);
 	}
 
-	private static function get_alternate_url( string $canonical_url, string $format = 'md' ): string {
+	public static function get_alternate_url( string $canonical_url, string $format = 'md' ): string {
 		$ext = $format === 'txt' ? 'txt' : 'md';
 		if ( get_option( 'permalink_structure' ) === '' ) {
 			return add_query_arg( 'format', $ext, $canonical_url );

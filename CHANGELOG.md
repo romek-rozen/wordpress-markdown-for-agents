@@ -2,6 +2,11 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.7-rc3] — 2026-02-19
+
+### Dodane
+- Nagłówek HTTP `Link: rel="alternate"` w odpowiedziach Markdown — index.md wskazuje na index.txt i odwrotnie
+
 ## [1.0.7-rc2] — 2026-02-19
 
 ### Dodane

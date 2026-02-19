@@ -162,6 +162,12 @@ class MDFA_Content_Negotiation {
 		if ( $canonical_url && get_option( 'mdfa_canonical', true ) ) {
 			header( 'Link: <' . esc_url( $canonical_url ) . '>; rel="canonical"' );
 		}
+		if ( $canonical_url ) {
+			$alt_format = $format === 'txt' ? 'md' : 'txt';
+			$alt_type   = $format === 'txt' ? 'text/markdown' : 'text/plain';
+			$alt_url    = MDFA_Discovery::get_alternate_url( $canonical_url, $alt_format );
+			header( 'Link: <' . esc_url( $alt_url ) . '>; rel="alternate"; type="' . $alt_type . '"', false );
+		}
 
 		echo $markdown;
 		exit;
